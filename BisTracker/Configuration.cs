@@ -18,6 +18,9 @@ public class Configuration : IPluginConfiguration
     public bool LockMiniMenuR = true;
     public bool PinMiniMenu = false;
 
+    public bool ShowMateriaMeldingWindows = true;
+    public bool HighlightBisMateriaInMateriaMelder = true;
+
     public List<JobBis>? SavedBis { get; set; }
 
     // the below exist just to make saving less cumbersome
@@ -29,7 +32,7 @@ public class Configuration : IPluginConfiguration
     public void SaveJobBis(JobBis jobBis)
     {
         if (SavedBis == null) SavedBis = new List<JobBis>();
-        var existingBis = SavedBis.SingleOrDefault(x => x.Job == jobBis.Job);
+        var existingBis = SavedBis.SingleOrDefault(x => x.Name == jobBis.Name);
         if (existingBis != null)
         {
             SavedBis.Remove(existingBis);

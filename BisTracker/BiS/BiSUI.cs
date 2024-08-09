@@ -18,6 +18,12 @@ namespace BisTracker.BiS
     {
         internal static uint SelectedJob = 0;
         internal static string SelectedJobPreview = string.Empty;
+
+        internal static string SelectedSavedSet = string.Empty;
+        internal static string StoredBisSearch = string.Empty;
+
+        internal static string SetNameToSave = string.Empty;
+
         private static string Search = string.Empty;
         private static string BisLink = string.Empty;
         private static Uri? BisLinkUri = null!;
@@ -32,7 +38,7 @@ namespace BisTracker.BiS
 
         internal static void Draw()
         {
-            ImGui.TextWrapped($"This page allows you to set your BIS for the jobs in the game.\n" +
+            ImGui.TextWrapped($"This page allows you to set your BIS for the jobs in the game.\n\n" +
                 $"Currently accepted links:\n" + 
                 "- xivgearapp");
             
@@ -43,8 +49,15 @@ namespace BisTracker.BiS
 
         private static async void DrawBisUI()
         {
-            ImGui.TextWrapped($"Current job: {CharacterInfo.JobID}");
+            if (ImGui.Button($"Current job: {CharacterInfo.JobID}"))
+            {
+                ResetBis();
+                ResetInputs();
+                SelectedJob = CharacterInfo.JobIDUint;
+                LoadBisFromConfig();
+            }
 
+            ImGui.TextWrapped("Job");
             SelectedJobPreview = SelectedJob != 0 ? LuminaSheets.ClassJobSheet[SelectedJob].Name.RawString : string.Empty;
             if (ImGui.BeginCombo("###BisJobSelection", SelectedJobPreview))
             {
@@ -81,6 +94,38 @@ namespace BisTracker.BiS
 
             if (SelectedJob != 0)
             {
+                if (P?.Config?.SavedBis != null)
+                {
+                    ImGui.Separator();
+                    ImGui.TextWrapped("Stored Sets");
+                    if (ImGui.BeginCombo("###StoredBisSets", SelectedSavedSet))
+                    {
+                        ImGui.Text("Search");
+                        ImGui.SameLine();
+                        ImGui.InputText("###StoredBisSetSearch", ref StoredBisSearch, 100);
+
+                        if (ImGui.Selectable("", SelectedSavedSet == string.Empty))
+                        {
+                            if (string.Empty != SelectedSavedSet) { ResetBis(); }
+                            SelectedSavedSet = string.Empty;
+                        }
+
+                        foreach (var savedSet in P.Config.SavedBis.Where(x => x.Job == SelectedJob))
+                        {
+                            bool selected = ImGui.Selectable($"{savedSet.Name}", savedSet.Name == SelectedSavedSet);
+
+                            if (selected)
+                            {
+                                SelectedSavedSet = savedSet.Name;
+                                ResetBis();
+                                LoadBisFromConfig(savedSet.Name);
+                            }
+                        }
+
+                        ImGui.EndCombo();
+                    }
+                }
+
                 ImGui.Separator();
                 ImGui.TextWrapped("Bis Link");
                 ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X / 2);
@@ -89,6 +134,7 @@ namespace BisTracker.BiS
                 if(ImGui.Button($"Import Bis"))
                 {
                     ResetBis();
+                    SelectedSavedSet = string.Empty;
 
                     Uri.TryCreate(BisLink, UriKind.Absolute, out BisLinkUri);
                     if (BisLinkUri == null || !ValidHosts.Contains(BisLinkUri.Host)) { ImGui.TextWrapped($"Invalid URI."); return; }
@@ -100,18 +146,26 @@ namespace BisTracker.BiS
 
                 if (SheetType == BisSheetType.XIVGearApp)
                 {
-                    if (XivGearAppResponse == null) { ImGui.TextWrapped($"Fetching bis from: {BisLinkUri.Host}..."); return; }
-                    if (XivGearAppResponse.Error) { ImGui.TextWrapped($"An error occurred fetching from: {BisLinkUri?.AbsoluteUri ?? ""}."); return; }
+                    if (XivGearAppResponse == null && XivGearAppChosenBis == null) { ImGui.TextWrapped($"Fetching bis from: {BisLinkUri.Host}..."); return; }
+                    if (XivGearAppResponse != null && XivGearAppResponse.Error) { ImGui.TextWrapped($"An error occurred fetching from: {BisLinkUri?.AbsoluteUri ?? ""}."); return; }
 
-                    if (XivGearAppResponse.Sets != null)
+                    if (XivGearAppResponse != null && XivGearAppResponse.Sets != null)
                     {
                         DrawXivGearAppSets();
+                        return;
                     }
 
-                    if (XivGearAppResponse.Items != null)
+                    if (XivGearAppChosenBis == null && XivGearAppResponse != null && XivGearAppResponse.Items != null)
                     {
                         XivGearAppChosenBis = XivGearAppResponse.Items;
                         DrawXivGearAppItems();
+                        return;
+                    }
+                    
+                    if (XivGearAppChosenBis != null)
+                    {
+                        DrawXivGearAppItems();
+                        return;
                     }
                 }
             }
@@ -120,6 +174,7 @@ namespace BisTracker.BiS
         private static void DrawXivGearAppSets()
         {
             if (XivGearAppResponse?.Sets == null) { return; }
+
             if (ImGui.BeginCombo("###BisXivGearAppSetSelection", SelectedXivGearAppSet))
             {
                 ImGui.Text("Search");
@@ -144,12 +199,7 @@ namespace BisTracker.BiS
                 }
 
                 ImGui.EndCombo();
-            }
-            ImGui.SameLine(ImGui.GetContentRegionAvail().X / 2 + 10f.Scale());
-            if (ImGui.Button($"Save Selection"))
-            {
-                SaveBisSelection();
-            }
+            }            
 
             if (XivGearAppChosenBis != null)
             {
@@ -161,6 +211,16 @@ namespace BisTracker.BiS
         {
             if (XivGearAppChosenBis == null) { return; }
 
+            if (SelectedSavedSet == string.Empty)
+            {
+                ImGui.InputText("###SaveBisSet", ref SetNameToSave, 100);
+                ImGui.SameLine(ImGui.GetContentRegionAvail().X / 2 + 10f.Scale());
+                if (ImGui.Button($"Save Selection"))
+                {
+                    SaveBisSelection();
+                }
+            }
+            
             ImGui.Text("Weapon");
             if (XivGearAppChosenBis?.Weapon != null)
             {
@@ -370,6 +430,7 @@ namespace BisTracker.BiS
         {
             SheetType = BisSheetType.None;
             XivGearAppResponse = null;
+            XivGearAppChosenBis = null;
         }
 
         private static void ResetInputs()
@@ -411,41 +472,37 @@ namespace BisTracker.BiS
                 SheetType = SheetType,
                 Link = BisLink,
                 SelectedXivGearAppSet = SelectedXivGearAppSet,
-                XivGearAppResponse = XivGearAppResponse
+                XivGearAppSetItems = XivGearAppResponse.Items,
+                Name = SetNameToSave
             };
+
+            if (SelectedXivGearAppSet != string.Empty && XivGearAppResponse.Sets != null)
+            {
+                jobBis.XivGearAppSetItems = XivGearAppResponse.Sets.Where(x => x.Name == SelectedXivGearAppSet).FirstOrDefault()?.Items ?? null;
+            }
 
             P.Config.SaveJobBis(jobBis);
         }
     
-        private static void LoadBisFromConfig()
+        private static void LoadBisFromConfig(string? setName = null)
         {
-            var jobBis = P.Config.SavedBis?.Where(x => x.Job == SelectedJob).SingleOrDefault() ?? null;
+            var jobBis = setName != null ? P.Config.SavedBis?.Where(x => x.Name == setName).SingleOrDefault() : P.Config.SavedBis?.Where(x => x.Job == SelectedJob).FirstOrDefault() ?? null;
             if (jobBis == null) return;
+            if (setName == null) { SelectedSavedSet = jobBis.Name; }
 
             Svc.Log.Debug($"Saved bis found for {SelectedJobPreview}: {jobBis.Link}");
 
-            BisLink = jobBis.Link ?? string.Empty;
-
+            BisLink = jobBis.Link;
+            
             Uri.TryCreate(BisLink, UriKind.Absolute, out BisLinkUri);
-            if (BisLinkUri == null || !ValidHosts.Contains(BisLinkUri.Host)) { ResetBis(); return; }
+            if (BisLinkUri == null || !ValidHosts.Contains(BisLinkUri.Host)) { ImGui.TextWrapped($"Invalid URI."); return; }
 
             SheetType = jobBis.SheetType ?? BisSheetType.None;
-            XivGearAppResponse = jobBis.XivGearAppResponse;
 
             if (SheetType == BisSheetType.XIVGearApp)
             {
                 SelectedXivGearAppSet = jobBis.SelectedXivGearAppSet ?? string.Empty;
-                if (XivGearAppResponse?.Sets != null)
-                {
-                    XivGearAppChosenBis = XivGearAppResponse.Sets.FirstOrDefault(x => x.Name?.ToLower() == SelectedXivGearAppSet.ToLower())?.Items ?? null;
-                    Svc.Log.Debug($"Saved bis selection: {XivGearAppResponse.Sets.FirstOrDefault(x => x.Name?.ToLower() == SelectedXivGearAppSet.ToLower())?.Name}");
-                }
-
-                if (XivGearAppResponse?.Items != null)
-                {
-                    XivGearAppChosenBis = XivGearAppResponse.Items;
-                    Svc.Log.Debug($"Fetched only bis: {XivGearAppResponse.Name}");
-                }
+                XivGearAppChosenBis = jobBis.XivGearAppSetItems;
             }
         }
     }

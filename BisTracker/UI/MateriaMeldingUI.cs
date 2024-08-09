@@ -22,7 +22,7 @@ namespace BisTracker.UI
         private static string SelectedJobBisSearch = string.Empty;
 
         private static BisSheetType SheetType = BisSheetType.None;
-        private static XivGearAppResponse? XivGearAppChosenBis = null;
+        private static XivGearApp_SetItems? XivGearAppChosenBis = null;
         private static string? XivGearAppSetName = string.Empty;
 
         private static Vector2 BisSelectorWindowSize = Vector2.Zero;
@@ -46,7 +46,8 @@ namespace BisTracker.UI
 
         public override void Draw()
         {
-            if (Svc.Condition[Dalamud.Game.ClientState.Conditions.ConditionFlag.BetweenAreas]) return; 
+            if (!P.Config.ShowMateriaMeldingWindows) return;
+            if (Svc.Condition[Dalamud.Game.ClientState.Conditions.ConditionFlag.BetweenAreas]) return;
 
             if (P.Config.SavedBis != null && P.Config.SavedBis.Any(x => x.Job == CharacterInfo.JobIDUint))
                 DrawOptions();
@@ -95,7 +96,7 @@ namespace BisTracker.UI
                         {
                             DrawBisPieceWindow(componentNode, bisItem);
 
-                            if (bisItem.Materia.Count > 0)
+                            if (bisItem.Materia.Count > 0 && P.Config.HighlightBisMateriaInMateriaMelder)
                             {
                                 var materiaItemListComponentNode = addonPtr->UldManager.NodeList[7]->GetAsAtkComponentList();
                                 UpdateBisMateriaNameColor(materiaItemListComponentNode, bisItem.Materia.Select(x => x.ItemName).ToList());
@@ -136,10 +137,15 @@ namespace BisTracker.UI
             ImGui.Begin($"###BisPiece{componentNode->NodeId}", flags);
             ImGui.Text($"{bisItem.ItemName}");
             ImGui.Separator();
-            foreach (var bisItemMateria in bisItem.Materia)
+            if (bisItem.Materia.Count > 0)
             {
-                ImGui.Text(bisItemMateria.ItemName);
+                foreach (var bisItemMateria in bisItem.Materia)
+                {
+                    ImGui.Text(bisItemMateria.ItemName);
+                }
             }
+            else { ImGui.Text("No melds.");  }
+            
 
             ImGui.End();
             ImGui.PopStyleVar(2);
@@ -272,7 +278,7 @@ namespace BisTracker.UI
                                 SelectedJobBisName = bisSet.Name;
                                 BisItemsSavedJob = CharacterInfo.JobIDUint;
                                 SheetType = bisSet.SheetType ?? BisSheetType.None;
-                                XivGearAppChosenBis = bisSet.XivGearAppResponse;
+                                XivGearAppChosenBis = bisSet.XivGearAppSetItems;
                                 XivGearAppSetName = bisSet.SelectedXivGearAppSet;
                                 LoadBisIntoList();
                             }
@@ -312,25 +318,19 @@ namespace BisTracker.UI
 
         public static void LoadXivGearAppBisIntoList()
         {
-            XivGearApp_SetItems? set = XivGearAppChosenBis.Items;
-            if (XivGearAppChosenBis.Sets != null)
-            {
-                set = XivGearAppChosenBis.Sets.Where(x => x.Name == XivGearAppSetName).FirstOrDefault()?.Items ?? null;
-            }
+            if (XivGearAppChosenBis == null) { return; }
 
-            if (set == null) { return; }
-
-            if (set.Weapon != null) BisItems.Add(new(set.Weapon));
-            if (set.Head != null) BisItems.Add(new(set.Head));
-            if (set.Body != null) BisItems.Add(new(set.Body));
-            if (set.Hand != null) BisItems.Add(new(set.Hand));
-            if (set.Legs != null) BisItems.Add(new(set.Legs));
-            if (set.Feet != null) BisItems.Add(new(set.Feet));
-            if (set.Ears != null) BisItems.Add(new(set.Ears));
-            if (set.Neck != null) BisItems.Add(new(set.Neck));
-            if (set.Wrist != null) BisItems.Add(new(set.Wrist));
-            if (set.RingRight != null) BisItems.Add(new(set.RingRight));
-            if (set.RingLeft != null) BisItems.Add(new(set.RingLeft));
+            if (XivGearAppChosenBis.Weapon != null && XivGearAppChosenBis.Weapon.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Weapon));
+            if (XivGearAppChosenBis.Head != null && XivGearAppChosenBis.Head.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Head));
+            if (XivGearAppChosenBis.Body != null && XivGearAppChosenBis.Body.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Body));
+            if (XivGearAppChosenBis.Hand != null && XivGearAppChosenBis.Hand.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Hand));
+            if (XivGearAppChosenBis.Legs != null && XivGearAppChosenBis.Legs.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Legs));
+            if (XivGearAppChosenBis.Feet != null && XivGearAppChosenBis.Feet.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Feet));
+            if (XivGearAppChosenBis.Ears != null && XivGearAppChosenBis.Ears.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Ears));
+            if (XivGearAppChosenBis.Neck != null && XivGearAppChosenBis.Neck.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Neck));
+            if (XivGearAppChosenBis.Wrist != null && XivGearAppChosenBis.Wrist.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Wrist));
+            if (XivGearAppChosenBis.RingRight != null && XivGearAppChosenBis.RingRight.Id > -1) BisItems.Add(new(XivGearAppChosenBis.RingRight));
+            if (XivGearAppChosenBis.RingLeft != null && XivGearAppChosenBis.RingLeft.Id > -1) BisItems.Add(new(XivGearAppChosenBis.RingLeft));
 
             Svc.Log.Debug($"Added {BisItems.Count} items to in-memory bis sheet.");
         }

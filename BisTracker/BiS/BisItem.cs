@@ -41,7 +41,7 @@ namespace BisTracker.BiS
             if (xivGearApp_Item.Materia != null)
             {
                 Materia = new();
-                foreach (var mat in xivGearApp_Item.Materia)
+                foreach (var mat in xivGearApp_Item.Materia.Where(x => x.Id > -1))
                 {
                     Materia.Add(new BisMateria(mat));
                 }
