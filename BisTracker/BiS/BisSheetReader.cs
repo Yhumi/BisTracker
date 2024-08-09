@@ -32,7 +32,10 @@ namespace BisTracker.BiS
 
             //Decoding should end up with sl|{id}
             var queryDictionary = System.Web.HttpUtility.ParseQueryString(xivGearAppBisUri.Query);
-            string? setId = queryDictionary.Get("page")?.Split(new[] { '|' }, 2)[1];
+            string? pageQuery = queryDictionary.Get("page");
+            if (pageQuery == null) { return null; }
+            if (pageQuery.Contains("dont-copy-this-link")) { return null; }
+            string? setId = pageQuery.Split(new[] { '|' }, 2)[1];
             return setId;
         }
 

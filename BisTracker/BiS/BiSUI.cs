@@ -459,9 +459,10 @@ namespace BisTracker.BiS
         private static async void FetchBisFromXivgearApp()
         {
             if (BisLinkUri == null) return;
-            XivGearAppResponse? xivGearAppResponse = await BisSheetReader.XivGearApp(BisLinkUri);
-            if (xivGearAppResponse == null) XivGearAppResponse = new(true);
-            XivGearAppResponse = xivGearAppResponse;
+            XivGearAppResponse = await BisSheetReader.XivGearApp(BisLinkUri);
+            if (XivGearAppResponse == null) XivGearAppResponse = new(true);
+
+            Svc.Log.Debug($"XivGearApp Reponse (Error? {XivGearAppResponse?.Error.ToString() ?? "NULL"}): {XivGearAppResponse?.Name ?? "NULL"}");
         }
     
         private static void SaveBisSelection()
