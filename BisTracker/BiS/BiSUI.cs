@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using BisTracker.BiS.Models;
 using Dalamud.Interface.Utility.Raii;
 using ECommons.ExcelServices;
+using Lumina.Excel.GeneratedSheets;
 
 namespace BisTracker.BiS
 {
@@ -34,6 +35,7 @@ namespace BisTracker.BiS
         private static string SelectedXivGearAppSet = string.Empty;
         private static XivGearApp_SetItems? XivGearAppChosenBis = null;
 
+        private static readonly string[] ExcludedJobs = ["CNJ", "ADV", "ARC", "GLA", "THM", "PGL", "MRD", "LNC", "ACN", "ROG"];
         private static string[] ValidHosts = ["xivgear.app", "www.xivgear.app"];
 
         internal static void Draw()
@@ -58,7 +60,7 @@ namespace BisTracker.BiS
             }
 
             ImGui.TextWrapped("Job");
-            SelectedJobPreview = SelectedJob != 0 ? LuminaSheets.ClassJobSheet[SelectedJob].Name.RawString : string.Empty;
+            SelectedJobPreview = SelectedJob != 0 ? JobNameCleanup(LuminaSheets.ClassJobSheet[SelectedJob]) : string.Empty;
             if (ImGui.BeginCombo("###BisJobSelection", SelectedJobPreview))
             {
                 ImGui.Text("Search");
@@ -72,9 +74,13 @@ namespace BisTracker.BiS
                     SelectedJobPreview = string.Empty;
                 }
 
-                foreach (var job in LuminaSheets.ClassJobSheet.Values.Where(x => x.Name.RawString.Contains(Search, StringComparison.CurrentCultureIgnoreCase) || x.Abbreviation.RawString.Contains(Search, StringComparison.CurrentCultureIgnoreCase))) 
+                foreach (var job in LuminaSheets.ClassJobSheet.Values
+                    .Where(x => !ExcludedJobs.Contains(x.Abbreviation.RawString))
+                    .Where(x => x.Name.RawString.Contains(Search, StringComparison.CurrentCultureIgnoreCase) || x.Abbreviation.RawString.Contains(Search, StringComparison.CurrentCultureIgnoreCase))
+                    .OrderBy(x => x.Name.RawString))
                 {
-                    bool selected = ImGui.Selectable($"{job.Name.RawString}", job.RowId == SelectedJob);
+                    
+                    bool selected = ImGui.Selectable(JobNameCleanup(job), job.RowId == SelectedJob);
 
                     if (selected)
                     {
@@ -84,7 +90,7 @@ namespace BisTracker.BiS
                             ResetInputs();
                         }
                         SelectedJob = job.RowId;
-                        SelectedJobPreview = SelectedJob != 0 ? LuminaSheets.ClassJobSheet[SelectedJob].Name.RawString : string.Empty;
+                        SelectedJobPreview = SelectedJob != 0 ? JobNameCleanup(LuminaSheets.ClassJobSheet[SelectedJob]) : string.Empty;
                         LoadBisFromConfig();
                     }
                 }
@@ -439,6 +445,8 @@ namespace BisTracker.BiS
             BisLinkUri = null;
             XivGearAppSetSearch = string.Empty;
             SelectedXivGearAppSet = string.Empty;
+            StoredBisSearch = string.Empty;
+            SelectedSavedSet = string.Empty;
         }
 
         private static void FetchBisFromHost()
@@ -483,6 +491,12 @@ namespace BisTracker.BiS
             }
 
             P.Config.SaveJobBis(jobBis);
+        }
+
+        private static string JobNameCleanup(ClassJob job)
+        {
+            string jobNameCapitalised = char.ToUpper(job.Name.RawString.First()) + job.Name.RawString.Substring(1).ToLower();
+            return $"{jobNameCapitalised} ({job.Abbreviation.RawString})";
         }
     
         private static void LoadBisFromConfig(string? setName = null)
