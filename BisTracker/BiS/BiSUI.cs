@@ -12,6 +12,9 @@ using BisTracker.BiS.Models;
 using Dalamud.Interface.Utility.Raii;
 using ECommons.ExcelServices;
 using Lumina.Excel.GeneratedSheets;
+using System.Numerics;
+using OtterGui;
+using Dalamud.Interface.Textures.TextureWraps;
 
 namespace BisTracker.BiS
 {
@@ -42,7 +45,7 @@ namespace BisTracker.BiS
         {
             ImGui.TextWrapped($"This page allows you to set your BIS for the jobs in the game.\n\n" +
                 $"Currently accepted links:\n" + 
-                "- xivgearapp");
+                "- xivgear.app");
             
             ImGui.Separator();
             
@@ -226,22 +229,8 @@ namespace BisTracker.BiS
                     SaveBisSelection();
                 }
             }
-            
-            ImGui.Text("Weapon");
-            if (XivGearAppChosenBis?.Weapon != null)
-            {
-                ImGui.Text(LuminaSheets.ItemSheet?[(uint)XivGearAppChosenBis.Weapon.Id]?.Name ?? "");
-                if (XivGearAppChosenBis.Weapon.Materia != null)
-                {
-                    foreach (var materia in XivGearAppChosenBis.Weapon.Materia)
-                    {
-                        if (materia.Id > -1)
-                        {
-                            ImGui.Text(LuminaSheets.ItemSheet?[(uint)materia.Id]?.Name ?? "");
-                        }
-                    }
-                }
-            }
+
+            DrawItem("Weapon", XivGearAppChosenBis.Weapon);
 
             using (var table = ImRaii.Table($"XivGearAppBisTable", 2, ImGuiTableFlags.Resizable))
             {
@@ -249,187 +238,78 @@ namespace BisTracker.BiS
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
 
-                ImGui.Text("Head");
-                if (XivGearAppChosenBis?.Head != null)
-                {
-                    ImGui.Text(LuminaSheets.ItemSheet?[(uint)XivGearAppChosenBis.Head.Id]?.Name ?? "");
-                    if (XivGearAppChosenBis.Head.Materia != null)
-                    {
-                        foreach (var materia in XivGearAppChosenBis.Head.Materia)
-                        {
-                            if (materia.Id > -1)
-                            {
-                                ImGui.Text(LuminaSheets.ItemSheet?[(uint)materia.Id]?.Name ?? "");
-                            }
-                        }
-                    }
-                }
-
+                DrawItem("Head", XivGearAppChosenBis.Head);
                 ImGui.TableNextColumn();
-                ImGui.Text("Ears");
-                if (XivGearAppChosenBis?.Ears != null)
-                {
-                    ImGui.Text(LuminaSheets.ItemSheet?[(uint)XivGearAppChosenBis.Ears.Id]?.Name ?? "");
-                    if (XivGearAppChosenBis.Ears.Materia != null)
-                    {
-                        foreach (var materia in XivGearAppChosenBis.Ears.Materia)
-                        {
-                            if (materia.Id > -1)
-                            {
-                                ImGui.Text(LuminaSheets.ItemSheet?[(uint)materia.Id]?.Name ?? "");
-                            }
-                        }
-                    }
-                }
+                DrawItem("Ears", XivGearAppChosenBis.Ears);
 
                 //Body | Neck
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
 
-                ImGui.Text("Body");
-                if (XivGearAppChosenBis?.Body != null)
-                {
-                    ImGui.Text(LuminaSheets.ItemSheet?[(uint)XivGearAppChosenBis.Body.Id]?.Name ?? "");
-                    if (XivGearAppChosenBis.Body.Materia != null)
-                    {
-                        foreach (var materia in XivGearAppChosenBis.Body.Materia)
-                        {
-                            if (materia.Id > -1)
-                            {
-                                ImGui.Text(LuminaSheets.ItemSheet?[(uint)materia.Id]?.Name ?? "");
-                            }
-                        }
-                    }
-                }
-
+                DrawItem("Body", XivGearAppChosenBis.Body);
                 ImGui.TableNextColumn();
-                ImGui.Text("Neck");
-                if (XivGearAppChosenBis?.Neck != null)
-                {
-                    ImGui.Text(LuminaSheets.ItemSheet?[(uint)XivGearAppChosenBis.Neck.Id]?.Name ?? "");
-                    if (XivGearAppChosenBis.Neck.Materia != null)
-                    {
-                        foreach (var materia in XivGearAppChosenBis.Neck.Materia)
-                        {
-                            if (materia.Id > -1)
-                            {
-                                ImGui.Text(LuminaSheets.ItemSheet?[(uint)materia.Id]?.Name ?? "");
-                            }
-                        }
-                    }
-                }
+                DrawItem("Neck", XivGearAppChosenBis.Neck);
 
                 //Hands | Wrists
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
 
-                ImGui.Text("Hands");
-                if (XivGearAppChosenBis?.Hand != null)
-                {
-                    ImGui.Text(LuminaSheets.ItemSheet?[(uint)XivGearAppChosenBis.Hand.Id]?.Name ?? "");
-                    if (XivGearAppChosenBis.Hand.Materia != null)
-                    {
-                        foreach (var materia in XivGearAppChosenBis.Hand.Materia)
-                        {
-                            if (materia.Id > -1)
-                            {
-                                ImGui.Text(LuminaSheets.ItemSheet?[(uint)materia.Id]?.Name ?? "");
-                            }
-                        }
-                    }
-                }
-
+                DrawItem("Hands", XivGearAppChosenBis.Hand);
                 ImGui.TableNextColumn();
-                ImGui.Text("Wrists");
-                if (XivGearAppChosenBis?.Wrist != null)
-                {
-                    ImGui.Text(LuminaSheets.ItemSheet?[(uint)XivGearAppChosenBis.Wrist.Id]?.Name ?? "");
-                    if (XivGearAppChosenBis.Wrist.Materia != null)
-                    {
-                        foreach (var materia in XivGearAppChosenBis.Wrist.Materia)
-                        {
-                            if (materia.Id > -1)
-                            {
-                                ImGui.Text(LuminaSheets.ItemSheet?[(uint)materia.Id]?.Name ?? "");
-                            }
-                        }
-                    }
-                }
+                DrawItem("Wrist", XivGearAppChosenBis.Wrist);
 
                 //Legs | RightRing
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
 
-                ImGui.Text("Legs");
-                if (XivGearAppChosenBis?.Legs != null)
-                {
-                    ImGui.Text(LuminaSheets.ItemSheet?[(uint)XivGearAppChosenBis.Legs.Id]?.Name ?? "");
-                    if (XivGearAppChosenBis.Legs.Materia != null)
-                    {
-                        foreach (var materia in XivGearAppChosenBis.Legs.Materia)
-                        {
-                            if (materia.Id > -1)
-                            {
-                                ImGui.Text(LuminaSheets.ItemSheet?[(uint)materia.Id]?.Name ?? "");
-                            }
-                        }
-                    }
-                }
-
+                DrawItem("Legs", XivGearAppChosenBis.Legs);
                 ImGui.TableNextColumn();
-                ImGui.Text("Right Ring");
-                if (XivGearAppChosenBis?.RingRight != null)
-                {
-                    ImGui.Text(LuminaSheets.ItemSheet?[(uint)XivGearAppChosenBis.RingRight.Id]?.Name ?? "");
-                    if (XivGearAppChosenBis.RingRight.Materia != null)
-                    {
-                        foreach (var materia in XivGearAppChosenBis.RingRight.Materia)
-                        {
-                            if (materia.Id > -1)
-                            {
-                                ImGui.Text(LuminaSheets.ItemSheet?[(uint)materia.Id]?.Name ?? "");
-                            }
-                        }
-                    }
-                }
+                DrawItem("Right Ring", XivGearAppChosenBis.RingRight);
 
                 //Feet | LeftRing
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
 
-                ImGui.Text("Feet");
-                if (XivGearAppChosenBis?.Feet != null)
-                {
-                    ImGui.Text(LuminaSheets.ItemSheet?[(uint)XivGearAppChosenBis.Feet.Id]?.Name ?? "");
-                    if (XivGearAppChosenBis.Feet.Materia != null)
-                    {
-                        foreach (var materia in XivGearAppChosenBis.Feet.Materia)
-                        {
-                            if (materia.Id > -1)
-                            {
-                                ImGui.Text(LuminaSheets.ItemSheet?[(uint)materia.Id]?.Name ?? "");
-                            }
-                        }
-                    }
-                }
-
+                DrawItem("Feet", XivGearAppChosenBis.Feet);
                 ImGui.TableNextColumn();
-                ImGui.Text("Left Ring");
-                if (XivGearAppChosenBis?.RingLeft != null)
+                DrawItem("Left Ring", XivGearAppChosenBis.RingLeft);
+            }
+        }
+
+        private static void DrawItem(string itemSlot, XivGearApp_Item? gearAppItem)
+        {
+            if (gearAppItem == null) return;
+            Item? luminaItem = LuminaSheets.ItemSheet?[(uint)gearAppItem.Id];
+            if (luminaItem == null) return;
+
+            ImGui.Text(itemSlot);
+            using (var table = ImRaii.Table($"#XivItem-{itemSlot}", 2, ImGuiTableFlags.SizingFixedFit))
+            {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+
+                DrawItemIcon(luminaItem);
+                ImGui.TableNextColumn();
+
+                ImGui.Text(luminaItem.Name ?? "");
+                if (gearAppItem.Materia != null)
                 {
-                    ImGui.Text(LuminaSheets.ItemSheet?[(uint)XivGearAppChosenBis.RingLeft.Id]?.Name ?? "");
-                    if (XivGearAppChosenBis.RingLeft.Materia != null)
+                    foreach (var materia in gearAppItem.Materia)
                     {
-                        foreach (var materia in XivGearAppChosenBis.RingLeft.Materia)
+                        if (materia.Id > -1)
                         {
-                            if (materia.Id > -1)
-                            {
-                                ImGui.Text(LuminaSheets.ItemSheet?[(uint)materia.Id]?.Name ?? "");
-                            }
+                            Item? materiaItem = LuminaSheets.ItemSheet?[(uint)materia.Id];
+                            ImGui.Text($"\t{materiaItem?.Name}");
                         }
                     }
                 }
-            }
+            } 
+        }
+
+        private static void DrawItemIcon(Item icon)
+        {
+            P.Icons.TryLoadIcon(icon.Icon, out IDalamudTextureWrap? wrap);
+            if (wrap != null) ImGuiUtil.HoverIcon(wrap, new Vector2(64f, 64f));
         }
 
         private static void ResetBis()

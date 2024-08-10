@@ -11,6 +11,7 @@ using ECommons.DalamudServices;
 using Dalamud.Interface.Style;
 using BisTracker.RawInformation.Character;
 using BisTracker.RawInformation;
+using OtterGui.Classes;
 
 namespace BisTracker;
 
@@ -24,7 +25,7 @@ public unsafe class BisTracker : IDalamudPlugin
     internal WindowSystem ws;
     internal Configuration Config;
     internal TaskManager TM;
-    //internal TextureCache Icons;
+    internal TextureCache Icons;
 
     internal StyleModel Style;
     internal bool StylePushed = false;
@@ -41,7 +42,7 @@ public unsafe class BisTracker : IDalamudPlugin
 
         ws = new();
         ws.AddWindow(new MateriaMeldingUI());
-        //Icons = new(Svc.Data, Svc.Texture, Svc.Log);
+        Icons = new(Svc.Data, Svc.Texture);
         Config = P.Config;
         PluginUi = new();
 
