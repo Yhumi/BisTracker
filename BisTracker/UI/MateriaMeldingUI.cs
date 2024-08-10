@@ -91,7 +91,11 @@ namespace BisTracker.UI
                     if (selectedItemPointer != null)
                     {
                         var selectedItemName = GetStringFromTextNode(selectedItemPointer->UldManager.NodeList[10]->GetAsAtkTextNode());
-                        BisItem? bisItem = BisItems.Where(x => x.ItemName != null && x.ItemName.ToLower().StartsWith(selectedItemName.ToLower().TrimEnd('.'))).FirstOrDefault();
+
+                        BisItem? bisItem = BisItems.Where(x => 
+                            x.ItemName != null && 
+                            (x.ItemName.ToLower().StartsWith(selectedItemName.ToLower().TrimEnd('.')) ||
+                            (P.Config.ShowAugmentedMeldsForUnaugmentedPieces && x.ItemName.ToLower().StartsWith($"Augmented {selectedItemName}".ToLower().TrimEnd('.'))))).FirstOrDefault();
                         if (bisItem != null)
                         {
                             DrawBisPieceWindow(componentNode, bisItem);

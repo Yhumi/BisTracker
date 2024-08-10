@@ -20,6 +20,7 @@ public class Configuration : IPluginConfiguration
 
     public bool ShowMateriaMeldingWindows = true;
     public bool HighlightBisMateriaInMateriaMelder = true;
+    public bool ShowAugmentedMeldsForUnaugmentedPieces = true;
 
     public List<JobBis>? SavedBis { get; set; }
 

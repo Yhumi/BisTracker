@@ -16,6 +16,7 @@ namespace BisTracker.UI
 
             bool ShowMateriaMeldingWindows = P.Config.ShowMateriaMeldingWindows;
             bool HighlightBisMateriaInMateriaMelder = P.Config.HighlightBisMateriaInMateriaMelder;
+            bool ShowAugmentedMeldsForUnaugmentedPieces = P.Config.ShowAugmentedMeldsForUnaugmentedPieces;
 
             ImGui.Separator();
 
@@ -36,6 +37,16 @@ namespace BisTracker.UI
                         P.Config.Save();
                     }
                     ImGuiComponents.HelpMarker($"Color the names of materia to be melded into the selected BiS gear piece.");
+                }
+
+                if (ShowMateriaMeldingWindows)
+                {
+                    if (ImGui.Checkbox("Show Augmented Melds for Unaugmented Pieces", ref ShowAugmentedMeldsForUnaugmentedPieces))
+                    {
+                        P.Config.ShowAugmentedMeldsForUnaugmentedPieces = ShowAugmentedMeldsForUnaugmentedPieces;
+                        P.Config.Save();
+                    }
+                    ImGuiComponents.HelpMarker($"Show the melds for the augmented version of an unaugmented piece if the augmented version is part of the selected bis.");
                 }
             }
         }
