@@ -102,8 +102,18 @@ namespace BisTracker.UI
 
                             if (bisItem.Materia.Count > 0 && P.Config.HighlightBisMateriaInMateriaMelder)
                             {
+                                var itemSlot = CharacterInfo.GetSlotIndexFromEquipSlotCategory(LuminaSheets.ItemSheet[bisItem.Id].EquipSlotCategory.Value);
+                                if (itemSlot == null) return;
+
+                                var melds = CharacterInfo.GetItemMateria(itemSlot.Value);
+                                var slottedMelds = melds.ToArray().Where(x => x != 0);
+                                if (slottedMelds.Count() == bisItem.Materia.Count) return; //The item is fully melded.
+
+                                var nextMateriaToMeld = bisItem.Materia[slottedMelds.Count()];
+                                if (nextMateriaToMeld == null) return;
+
                                 var materiaItemListComponentNode = addonPtr->UldManager.NodeList[7]->GetAsAtkComponentList();
-                                UpdateBisMateriaNameColor(materiaItemListComponentNode, bisItem.Materia.Select(x => x.ItemName).ToList());
+                                UpdateBisMateriaNameColor(materiaItemListComponentNode, new List<string>() { nextMateriaToMeld.ItemName ?? string.Empty });
                             }
                         }
                     }

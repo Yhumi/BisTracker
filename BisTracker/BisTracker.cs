@@ -12,6 +12,9 @@ using Dalamud.Interface.Style;
 using BisTracker.RawInformation.Character;
 using BisTracker.RawInformation;
 using OtterGui.Classes;
+using Dalamud.Game.Inventory.InventoryEventArgTypes;
+using Dalamud.Game.Inventory;
+using System.Collections.Generic;
 
 namespace BisTracker;
 
@@ -45,6 +48,8 @@ public unsafe class BisTracker : IDalamudPlugin
         Icons = new(Svc.Data, Svc.Texture);
         Config = P.Config;
         PluginUi = new();
+
+        CharacterInfo.SetCharaEquippedGearPointer();
 
         Svc.Commands.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
