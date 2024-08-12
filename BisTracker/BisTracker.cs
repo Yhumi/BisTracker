@@ -22,6 +22,7 @@ public unsafe class BisTracker : IDalamudPlugin
 {
     public string Name => "BisTracker";
     private const string CommandName = "/bis";
+    private const int CurrentConfigVersion = 2;
 
     internal static BisTracker P = null!;
     internal PluginUI PluginUi;
@@ -42,6 +43,11 @@ public unsafe class BisTracker : IDalamudPlugin
         P.Config = Configuration.Load();
         TM = new();
         TM.TimeLimitMS = 1000;
+
+        if (P.Config.Version != CurrentConfigVersion)
+        {
+            P.Config.UpdateConfig();
+        }
 
         ws = new();
         ws.AddWindow(new MateriaMeldingUI());

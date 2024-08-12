@@ -13,7 +13,7 @@ namespace BisTracker;
 [Serializable]
 public class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 1;
+    public int Version { get; set; } = 2;
 
     public bool LockMiniMenuR = true;
     public bool PinMiniMenu = false;
@@ -57,5 +57,20 @@ public class Configuration : IPluginConfiguration
             Svc.Log.Error($"Failed to load config from {Svc.PluginInterface.ConfigFile.FullName}: {e}");
             return new();
         }
+    }
+
+    public void UpdateConfig()
+    {
+        if (Version == 1)
+        {
+            foreach(var jobBis in SavedBis)
+            {
+                jobBis.CreateBisItemsFromXivGearAppSetItems(jobBis.XivGearAppSetItems);
+                jobBis.SelectedXivGearAppSet = null;
+                jobBis.XivGearAppSetItems = null;
+            }
+        }
+
+        P.Config.Save();
     }
 }

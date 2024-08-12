@@ -33,10 +33,15 @@ namespace BisTracker.BiS
         private static Uri? BisLinkUri = null!;
 
         private static BisSheetType SheetType = BisSheetType.None;
+
+        //Loading from XivGear.App
         private static XivGearAppResponse? XivGearAppResponse;
         private static string XivGearAppSetSearch = string.Empty;
         private static string SelectedXivGearAppSet = string.Empty;
         private static XivGearApp_SetItems? XivGearAppChosenBis = null;
+
+        //Loading from saved bis
+        private static JobBis? SavedBis = null;
 
         private static readonly string[] ExcludedJobs = ["CNJ", "ADV", "ARC", "GLA", "THM", "PGL", "MRD", "LNC", "ACN", "ROG"];
         private static string[] ValidHosts = ["xivgear.app", "www.xivgear.app"];
@@ -153,31 +158,50 @@ namespace BisTracker.BiS
 
                 ImGui.Separator();
 
-                if (SheetType == BisSheetType.XIVGearApp)
+                switch(SheetType)
                 {
-                    if (XivGearAppResponse == null && XivGearAppChosenBis == null) { ImGui.TextWrapped($"Fetching bis from: {BisLinkUri.Host}..."); return; }
-                    if (XivGearAppResponse != null && XivGearAppResponse.Error) { ImGui.TextWrapped($"An error occurred fetching from: {BisLinkUri?.AbsoluteUri ?? ""}."); return; }
-
-                    if (XivGearAppResponse != null && XivGearAppResponse.Sets != null)
-                    {
-                        DrawXivGearAppSets();
-                        return;
-                    }
-
-                    if (XivGearAppChosenBis == null && XivGearAppResponse != null && XivGearAppResponse.Items != null)
-                    {
-                        XivGearAppChosenBis = XivGearAppResponse.Items;
-                        DrawXivGearAppItems();
-                        return;
-                    }
-                    
-                    if (XivGearAppChosenBis != null)
-                    {
-                        DrawXivGearAppItems();
-                        return;
-                    }
+                    case BisSheetType.Saved:
+                        DrawSavedBis();
+                        break;
+                    case BisSheetType.XIVGearApp:
+                        DrawXivGearAppBis();
+                        break;
+                    case BisSheetType.None:
+                    default:
+                        break;
                 }
             }
+        }
+
+        private static void DrawXivGearAppBis()
+        {
+            if (XivGearAppResponse == null && XivGearAppChosenBis == null) { ImGui.TextWrapped($"Fetching bis from: {BisLinkUri.Host}..."); return; }
+            if (XivGearAppResponse != null && XivGearAppResponse.Error) { ImGui.TextWrapped($"An error occurred fetching from: {BisLinkUri?.AbsoluteUri ?? ""}."); return; }
+
+            if (XivGearAppResponse != null && XivGearAppResponse.Sets != null)
+            {
+                DrawXivGearAppSets();
+                return;
+            }
+
+            if (XivGearAppChosenBis == null && XivGearAppResponse != null && XivGearAppResponse.Items != null)
+            {
+                XivGearAppChosenBis = XivGearAppResponse.Items;
+                DrawXivGearAppItems();
+                return;
+            }
+
+            if (XivGearAppChosenBis != null)
+            {
+                DrawXivGearAppItems();
+                return;
+            }
+        }
+
+        private static void DrawSavedBis()
+        {
+            if (SavedBis == null) return;
+            DrawBisItems(SavedBis);
         }
 
         private static void DrawXivGearAppSets()
@@ -220,17 +244,24 @@ namespace BisTracker.BiS
         {
             if (XivGearAppChosenBis == null) { return; }
 
-            if (SelectedSavedSet == string.Empty)
+            ImGui.InputText("###SaveBisSet", ref SetNameToSave, 100);
+            ImGui.SameLine(ImGui.GetContentRegionAvail().X / 2 + 10f.Scale());
+            if (ImGui.Button($"Save Selection"))
             {
-                ImGui.InputText("###SaveBisSet", ref SetNameToSave, 100);
-                ImGui.SameLine(ImGui.GetContentRegionAvail().X / 2 + 10f.Scale());
-                if (ImGui.Button($"Save Selection"))
-                {
-                    SaveBisSelection();
-                }
+                SaveBisSelection();
             }
 
-            DrawItem("Weapon", XivGearAppChosenBis.Weapon);
+            JobBis jobBis = new JobBis();
+            jobBis.CreateBisItemsFromXivGearAppSetItems(XivGearAppChosenBis);
+
+            DrawBisItems(jobBis);
+        }
+
+        private static void DrawBisItems(JobBis jobBis)
+        {
+            if (jobBis == null || jobBis.BisItems == null) return;
+
+            DrawItem("Weapon", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.MainHand).FirstOrDefault());
 
             using (var table = ImRaii.Table($"XivGearAppBisTable", 2, ImGuiTableFlags.Resizable))
             {
@@ -238,45 +269,45 @@ namespace BisTracker.BiS
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
 
-                DrawItem("Head", XivGearAppChosenBis.Head);
+                DrawItem("Head", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Head).FirstOrDefault());
                 ImGui.TableNextColumn();
-                DrawItem("Ears", XivGearAppChosenBis.Ears);
+                DrawItem("Ears", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Ears).FirstOrDefault());
 
                 //Body | Neck
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
 
-                DrawItem("Body", XivGearAppChosenBis.Body);
+                DrawItem("Body", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Body).FirstOrDefault());
                 ImGui.TableNextColumn();
-                DrawItem("Neck", XivGearAppChosenBis.Neck);
+                DrawItem("Neck", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Neck).FirstOrDefault());
 
                 //Hands | Wrists
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
 
-                DrawItem("Hands", XivGearAppChosenBis.Hand);
+                DrawItem("Hands", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Gloves).FirstOrDefault());
                 ImGui.TableNextColumn();
-                DrawItem("Wrist", XivGearAppChosenBis.Wrist);
+                DrawItem("Wrist", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Wrists).FirstOrDefault());
 
                 //Legs | RightRing
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
 
-                DrawItem("Legs", XivGearAppChosenBis.Legs);
+                DrawItem("Legs", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Legs).FirstOrDefault());
                 ImGui.TableNextColumn();
-                DrawItem("Right Ring", XivGearAppChosenBis.RingRight);
+                DrawItem("Right Ring", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.RightRing).FirstOrDefault());
 
                 //Feet | LeftRing
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
 
-                DrawItem("Feet", XivGearAppChosenBis.Feet);
+                DrawItem("Feet", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Feet).FirstOrDefault());
                 ImGui.TableNextColumn();
-                DrawItem("Left Ring", XivGearAppChosenBis.RingLeft);
+                DrawItem("Left Ring", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.LeftRing).FirstOrDefault());
             }
         }
 
-        private static void DrawItem(string itemSlot, XivGearApp_Item? gearAppItem)
+        private static void DrawItem(string itemSlot, JobBis_Item? gearAppItem)
         {
             if (gearAppItem == null) return;
             Item? luminaItem = LuminaSheets.ItemSheet?[(uint)gearAppItem.Id];
@@ -317,6 +348,7 @@ namespace BisTracker.BiS
             SheetType = BisSheetType.None;
             XivGearAppResponse = null;
             XivGearAppChosenBis = null;
+            SavedBis = null;
         }
 
         private static void ResetInputs()
@@ -325,6 +357,7 @@ namespace BisTracker.BiS
             BisLinkUri = null;
             XivGearAppSetSearch = string.Empty;
             SelectedXivGearAppSet = string.Empty;
+
             StoredBisSearch = string.Empty;
             SelectedSavedSet = string.Empty;
         }
@@ -358,16 +391,16 @@ namespace BisTracker.BiS
             JobBis jobBis = new JobBis()
             {
                 Job = SelectedJob,
-                SheetType = SheetType,
-                Link = BisLink,
-                SelectedXivGearAppSet = SelectedXivGearAppSet,
-                XivGearAppSetItems = XivGearAppResponse.Items,
                 Name = SetNameToSave
             };
 
-            if (SelectedXivGearAppSet != string.Empty && XivGearAppResponse.Sets != null)
+            switch(SheetType)
             {
-                jobBis.XivGearAppSetItems = XivGearAppResponse.Sets.Where(x => x.Name == SelectedXivGearAppSet).FirstOrDefault()?.Items ?? null;
+                case BisSheetType.XIVGearApp:
+                    jobBis.PopulateBisItemsFromXIVGearApp(XivGearAppResponse, SelectedXivGearAppSet);
+                    break;
+                default:
+                    return;
             }
 
             P.Config.SaveJobBis(jobBis);
@@ -385,20 +418,9 @@ namespace BisTracker.BiS
             if (jobBis == null) return;
             if (setName == null) { SelectedSavedSet = jobBis.Name; }
 
-            Svc.Log.Debug($"Saved bis found for {SelectedJobPreview}: {jobBis.Link}");
-
-            BisLink = jobBis.Link;
-            
-            Uri.TryCreate(BisLink, UriKind.Absolute, out BisLinkUri);
-            if (BisLinkUri == null || !ValidHosts.Contains(BisLinkUri.Host)) { ImGui.TextWrapped($"Invalid URI."); return; }
-
-            SheetType = jobBis.SheetType ?? BisSheetType.None;
-
-            if (SheetType == BisSheetType.XIVGearApp)
-            {
-                SelectedXivGearAppSet = jobBis.SelectedXivGearAppSet ?? string.Empty;
-                XivGearAppChosenBis = jobBis.XivGearAppSetItems;
-            }
+            Svc.Log.Debug($"Saved bis found for {SelectedJobPreview}.");
+            SheetType = BisSheetType.Saved;
+            SavedBis = jobBis;
         }
     }
 }
@@ -406,5 +428,6 @@ namespace BisTracker.BiS
 public enum BisSheetType
 {
     None = 0,
-    XIVGearApp = 1
+    Saved = 1,
+    XIVGearApp = 2
 }

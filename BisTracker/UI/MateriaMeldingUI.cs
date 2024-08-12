@@ -21,9 +21,7 @@ namespace BisTracker.UI
         private static string SelectedJobBisName = string.Empty;
         private static string SelectedJobBisSearch = string.Empty;
 
-        private static BisSheetType SheetType = BisSheetType.None;
-        private static XivGearApp_SetItems? XivGearAppChosenBis = null;
-        private static string? XivGearAppSetName = string.Empty;
+        private static JobBis? SavedJobBis = null;
 
         private static Vector2 BisSelectorWindowSize = Vector2.Zero;
 
@@ -291,9 +289,7 @@ namespace BisTracker.UI
                                 ResetBis();
                                 SelectedJobBisName = bisSet.Name;
                                 BisItemsSavedJob = CharacterInfo.JobIDUint;
-                                SheetType = bisSet.SheetType ?? BisSheetType.None;
-                                XivGearAppChosenBis = bisSet.XivGearAppSetItems;
-                                XivGearAppSetName = bisSet.SelectedXivGearAppSet;
+                                SavedJobBis = bisSet;
                                 LoadBisIntoList();
                             }
                         }
@@ -312,39 +308,16 @@ namespace BisTracker.UI
             BisItems.Clear();
             BisItemsSavedJob = 0;
             SelectedJobBisName = string.Empty;
-            SheetType = BisSheetType.None;
-            XivGearAppChosenBis = null;
-            XivGearAppSetName = string.Empty;
         }
 
         public static void LoadBisIntoList()
         {
-            switch(SheetType)
+            if (SavedJobBis == null || SavedJobBis.BisItems == null) { return; }
+
+            foreach (var bisItem in SavedJobBis.BisItems)
             {
-                case BisSheetType.XIVGearApp:
-                    LoadXivGearAppBisIntoList();
-                    break;
-                case BisSheetType.None:
-                default:
-                    break;
+                BisItems.Add(new(bisItem));
             }
-        }
-
-        public static void LoadXivGearAppBisIntoList()
-        {
-            if (XivGearAppChosenBis == null) { return; }
-
-            if (XivGearAppChosenBis.Weapon != null && XivGearAppChosenBis.Weapon.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Weapon));
-            if (XivGearAppChosenBis.Head != null && XivGearAppChosenBis.Head.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Head));
-            if (XivGearAppChosenBis.Body != null && XivGearAppChosenBis.Body.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Body));
-            if (XivGearAppChosenBis.Hand != null && XivGearAppChosenBis.Hand.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Hand));
-            if (XivGearAppChosenBis.Legs != null && XivGearAppChosenBis.Legs.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Legs));
-            if (XivGearAppChosenBis.Feet != null && XivGearAppChosenBis.Feet.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Feet));
-            if (XivGearAppChosenBis.Ears != null && XivGearAppChosenBis.Ears.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Ears));
-            if (XivGearAppChosenBis.Neck != null && XivGearAppChosenBis.Neck.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Neck));
-            if (XivGearAppChosenBis.Wrist != null && XivGearAppChosenBis.Wrist.Id > -1) BisItems.Add(new(XivGearAppChosenBis.Wrist));
-            if (XivGearAppChosenBis.RingRight != null && XivGearAppChosenBis.RingRight.Id > -1) BisItems.Add(new(XivGearAppChosenBis.RingRight));
-            if (XivGearAppChosenBis.RingLeft != null && XivGearAppChosenBis.RingLeft.Id > -1) BisItems.Add(new(XivGearAppChosenBis.RingLeft));
 
             Svc.Log.Debug($"Added {BisItems.Count} items to in-memory bis sheet.");
         }

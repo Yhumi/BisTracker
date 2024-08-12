@@ -32,16 +32,16 @@ namespace BisTracker.BiS
             }
         }
 
-        public BisItem(XivGearApp_Item xivGearApp_Item)
+        public BisItem(JobBis_Item jobBisItem)
         {
-            Id = (uint)xivGearApp_Item.Id;
-            var item = LuminaSheets.ItemSheet[(uint)xivGearApp_Item.Id];
+            Id = (uint)jobBisItem.Id;
+            var item = LuminaSheets.ItemSheet[(uint)jobBisItem.Id];
             ItemName = item.Name;
 
-            if (xivGearApp_Item.Materia != null)
+            if (jobBisItem.Materia != null)
             {
                 Materia = new();
-                foreach (var mat in xivGearApp_Item.Materia.Where(x => x.Id > -1))
+                foreach (var mat in jobBisItem.Materia.Where(x => x.Id > -1))
                 {
                     Materia.Add(new BisMateria(mat));
                 }
@@ -60,10 +60,10 @@ namespace BisTracker.BiS
             Id = id;
             ItemName = LuminaSheets.ItemSheet[id].Name;
         }
-        public BisMateria(XivGearApp_Materia xivGearApp_Materia)
+        public BisMateria(JobBis_ItemMateria materia)
         {
-            Id = (uint)xivGearApp_Materia.Id;
-            ItemName = LuminaSheets.ItemSheet[(uint)xivGearApp_Materia.Id].Name;
+            Id = (uint)materia.Id;
+            ItemName = LuminaSheets.ItemSheet[(uint)materia.Id].Name;
         }
     }
 }

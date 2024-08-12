@@ -56,6 +56,12 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <Compile Remove="Events\**" />
+      <EmbeddedResource Remove="Events\**" />
+      <None Remove="Events\**" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="DalamudPackager" Version="2.1.13" />
         <ProjectReference Include="..\ECommons\ECommons\ECommons.csproj" />
         <ProjectReference Include="..\OtterGui\OtterGui.csproj" />
@@ -97,9 +103,5 @@
       <None Update="Images\dog.png">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Events\" />
     </ItemGroup>
 </Project>

@@ -54,6 +54,9 @@ namespace BisTracker.BiS.Models
         [JsonProperty]
         public XivGearApp_Item? Weapon { get; set; }
 
+        [JsonProperty]
+        public XivGearApp_Item? OffHand { get; set; }
+
 
         [JsonProperty]
         public XivGearApp_Item? Head { get; set; }
