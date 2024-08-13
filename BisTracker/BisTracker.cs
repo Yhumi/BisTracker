@@ -15,6 +15,8 @@ using OtterGui.Classes;
 using Dalamud.Game.Inventory.InventoryEventArgTypes;
 using Dalamud.Game.Inventory;
 using System.Collections.Generic;
+using BisTracker.BiS;
+using System.Linq;
 
 namespace BisTracker;
 
@@ -55,7 +57,7 @@ public unsafe class BisTracker : IDalamudPlugin
         Config = P.Config;
         PluginUi = new();
 
-        CharacterInfo.SetCharaEquippedGearPointer();
+        CharacterInfo.SetCharaInventoryPointers();
 
         Svc.Commands.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
@@ -69,6 +71,7 @@ public unsafe class BisTracker : IDalamudPlugin
         Svc.PluginInterface.UiBuilder.OpenMainUi += DrawConfigUI;
 
         Svc.ClientState.ClassJobChanged += OnCharacterJobChange;
+        Svc.GameInventory.InventoryChanged += OnInventoryChange;
 
         Style = StyleModel.GetFromCurrent()!;
 
@@ -83,6 +86,8 @@ public unsafe class BisTracker : IDalamudPlugin
         Svc.PluginInterface.UiBuilder.OpenConfigUi -= DrawConfigUI;
         Svc.PluginInterface.UiBuilder.Draw -= ws.Draw;
         Svc.PluginInterface.UiBuilder.OpenMainUi -= DrawConfigUI;
+
+        Svc.ClientState.ClassJobChanged -= OnCharacterJobChange;
 
         ws?.RemoveAllWindows();
         ws = null!;
@@ -127,5 +132,13 @@ public unsafe class BisTracker : IDalamudPlugin
     private void OnCharacterJobChange(uint classJobId)
     {
         CharacterInfo.UpdateCharaStats(classJobId);
+    }
+
+    private void OnInventoryChange(IReadOnlyCollection<InventoryEventArgs> events)
+    {
+        if (events.Any(x => x.Type == GameInventoryEvent.Added || x.Type == GameInventoryEvent.Removed || x.Type == GameInventoryEvent.Moved))
+        {
+            BiSUI.UpdateItemCheck();
+        }
     }
 }

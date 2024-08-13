@@ -24,9 +24,64 @@ namespace BisTracker.RawInformation.Character
             CharacterLevel = Svc.ClientState.LocalPlayer?.Level;
         }
 
-        public static unsafe void SetCharaEquippedGearPointer()
+        public static unsafe void SetCharaInventoryPointers()
         {
             EquippedGear = InventoryManager.Instance()->GetInventoryContainer(InventoryType.EquippedItems);
+        }
+
+        public static unsafe int? SearchForItemInArmouryChest(int itemId, CharacterEquippedGearSlotIndex gearSlot)
+        {
+            switch (gearSlot)
+            {
+                case CharacterEquippedGearSlotIndex.MainHand:
+                    return SearchForItemInInventory(InventoryManager.Instance()->GetInventoryContainer(InventoryType.ArmoryMainHand), itemId);
+
+                case CharacterEquippedGearSlotIndex.OffHand:
+                    return SearchForItemInInventory(InventoryManager.Instance()->GetInventoryContainer(InventoryType.ArmoryOffHand), itemId);
+
+                case CharacterEquippedGearSlotIndex.Head:
+                    return SearchForItemInInventory(InventoryManager.Instance()->GetInventoryContainer(InventoryType.ArmoryHead), itemId);
+
+                case CharacterEquippedGearSlotIndex.Body:
+                    return SearchForItemInInventory(InventoryManager.Instance()->GetInventoryContainer(InventoryType.ArmoryBody), itemId);
+
+                case CharacterEquippedGearSlotIndex.Gloves:
+                    return SearchForItemInInventory(InventoryManager.Instance()->GetInventoryContainer(InventoryType.ArmoryHands), itemId);
+
+                case CharacterEquippedGearSlotIndex.Legs:
+                    return SearchForItemInInventory(InventoryManager.Instance()->GetInventoryContainer(InventoryType.ArmoryLegs), itemId);
+
+                case CharacterEquippedGearSlotIndex.Feet:
+                    return SearchForItemInInventory(InventoryManager.Instance()->GetInventoryContainer(InventoryType.ArmoryFeets), itemId);
+
+                case CharacterEquippedGearSlotIndex.Ears:
+                    return SearchForItemInInventory(InventoryManager.Instance()->GetInventoryContainer(InventoryType.ArmoryEar), itemId);
+
+                case CharacterEquippedGearSlotIndex.Neck:
+                    return SearchForItemInInventory(InventoryManager.Instance()->GetInventoryContainer(InventoryType.ArmoryNeck), itemId);
+
+                case CharacterEquippedGearSlotIndex.Wrists:
+                    return SearchForItemInInventory(InventoryManager.Instance()->GetInventoryContainer(InventoryType.ArmoryWrist), itemId);
+
+                case CharacterEquippedGearSlotIndex.RightRing:
+                case CharacterEquippedGearSlotIndex.LeftRing:
+                    return SearchForItemInInventory(InventoryManager.Instance()->GetInventoryContainer(InventoryType.ArmoryRings), itemId);
+
+                default:
+                    return null;
+            }
+        }
+
+        private static unsafe int? SearchForItemInInventory(InventoryContainer* inv, int itemId)
+        {
+            uint invSize = inv->Size;
+            for (int i = 0; i < invSize; i++)
+            {
+                if (inv->GetInventorySlot(i)->ItemId == itemId)
+                    return i;
+            }
+
+            return null;
         }
 
         public static unsafe Span<ushort> GetItemMateria(CharacterEquippedGearSlotIndex index) => GetInventoryItem(index)->Materia;

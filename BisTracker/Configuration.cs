@@ -5,6 +5,7 @@ using ECommons.DalamudServices;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 
@@ -21,6 +22,15 @@ public class Configuration : IPluginConfiguration
     public bool ShowMateriaMeldingWindows = true;
     public bool HighlightBisMateriaInMateriaMelder = true;
     public bool ShowAugmentedMeldsForUnaugmentedPieces = true;
+
+    [NonSerialized]
+    public int AccessoryCost = 375;
+    [NonSerialized]
+    public int LeftSmallCost = 495;
+    [NonSerialized]
+    public int LeftBigCost = 825;
+    [NonSerialized]
+    public int WeeklyTomeCap  = 450;
 
     public List<JobBis>? SavedBis { get; set; }
 

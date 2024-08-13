@@ -46,6 +46,10 @@ namespace BisTracker.BiS
         //Loading from saved bis
         private static JobBis? SavedBis = null;
 
+        //Found slots 
+        private static List<CharacterEquippedGearSlotIndex> FoundItems = new();
+        private static List<CharacterEquippedGearSlotIndex> EquippedItems = new();
+
         private static readonly string[] ExcludedJobs = ["CNJ", "ADV", "ARC", "GLA", "THM", "PGL", "MRD", "LNC", "ACN", "ROG"];
         private static string[] ValidHosts = ["xivgear.app", "www.xivgear.app", "etro.gg", "www.etro.gg"];
 
@@ -167,6 +171,7 @@ namespace BisTracker.BiS
                     if (BisLinkUri == null || !ValidHosts.Contains(BisLinkUri.Host)) { ImGui.TextWrapped($"Invalid URI."); return; }
 
                     FetchBisFromHost();
+
                 }
 
                 ImGui.Separator();
@@ -255,6 +260,12 @@ namespace BisTracker.BiS
                     {
                         SelectedXivGearAppSet = set.Name;
                         XivGearAppChosenBis = set.Items;
+
+                        JobBis jobBis = new JobBis();
+                        jobBis.CreateBisItemsFromXivGearAppSetItems(set.Items);
+
+                        CheckForItemsEquipped(jobBis);
+                        CheckForItemsInArmouryChest(jobBis);
                     }
                 }
 
@@ -309,58 +320,54 @@ namespace BisTracker.BiS
             {
                 //MainHand | OffHand
                 ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                DrawItem("Weapon", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.MainHand).FirstOrDefault());
-                ImGui.TableNextColumn();
-                DrawItem("Off Hand", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.OffHand).FirstOrDefault());
+
+                DrawItem("Weapon", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.MainHand).FirstOrDefault(), CharacterEquippedGearSlotIndex.MainHand);
+                DrawItem("Off Hand", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.OffHand).FirstOrDefault(), CharacterEquippedGearSlotIndex.OffHand);
 
                 //Head | Ears
                 ImGui.TableNextRow();
-                ImGui.TableNextColumn();
 
-                DrawItem("Head", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Head).FirstOrDefault());
-                ImGui.TableNextColumn();
-                DrawItem("Ears", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Ears).FirstOrDefault());
+                DrawItem("Head", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Head).FirstOrDefault(), CharacterEquippedGearSlotIndex.Head);
+                DrawItem("Ears", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Ears).FirstOrDefault(), CharacterEquippedGearSlotIndex.Ears);
 
                 //Body | Neck
                 ImGui.TableNextRow();
-                ImGui.TableNextColumn();
 
-                DrawItem("Body", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Body).FirstOrDefault());
-                ImGui.TableNextColumn();
-                DrawItem("Neck", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Neck).FirstOrDefault());
+                DrawItem("Body", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Body).FirstOrDefault(), CharacterEquippedGearSlotIndex.Body);
+                DrawItem("Neck", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Neck).FirstOrDefault(), CharacterEquippedGearSlotIndex.Neck);
 
                 //Hands | Wrists
                 ImGui.TableNextRow();
-                ImGui.TableNextColumn();
 
-                DrawItem("Hands", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Gloves).FirstOrDefault());
-                ImGui.TableNextColumn();
-                DrawItem("Wrist", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Wrists).FirstOrDefault());
+                DrawItem("Hands", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Gloves).FirstOrDefault(), CharacterEquippedGearSlotIndex.Gloves);
+                DrawItem("Wrist", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Wrists).FirstOrDefault(), CharacterEquippedGearSlotIndex.Wrists);
 
                 //Legs | RightRing
                 ImGui.TableNextRow();
-                ImGui.TableNextColumn();
 
-                DrawItem("Legs", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Legs).FirstOrDefault());
-                ImGui.TableNextColumn();
-                DrawItem("Right Ring", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.RightRing).FirstOrDefault());
+                DrawItem("Legs", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Legs).FirstOrDefault(), CharacterEquippedGearSlotIndex.Legs);
+                DrawItem("Right Ring", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.RightRing).FirstOrDefault(), CharacterEquippedGearSlotIndex.RightRing);
 
                 //Feet | LeftRing
                 ImGui.TableNextRow();
-                ImGui.TableNextColumn();
 
-                DrawItem("Feet", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Feet).FirstOrDefault());
-                ImGui.TableNextColumn();
-                DrawItem("Left Ring", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.LeftRing).FirstOrDefault());
+                DrawItem("Feet", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.Feet).FirstOrDefault(), CharacterEquippedGearSlotIndex.Feet);
+                DrawItem("Left Ring", jobBis.BisItems.Where(x => x.GearSlot == CharacterEquippedGearSlotIndex.LeftRing).FirstOrDefault(), CharacterEquippedGearSlotIndex.LeftRing);
             }
         }
 
-        private static void DrawItem(string itemSlot, JobBis_Item? gearAppItem)
+        private static void DrawItem(string itemSlot, JobBis_Item? gearAppItem, CharacterEquippedGearSlotIndex gearSlot)
         {
+            ImGui.TableNextColumn();
+
             if (gearAppItem == null || gearAppItem.Id <= 0) return;
             Item? luminaItem = LuminaSheets.ItemSheet?[(uint)gearAppItem.Id];
             if (luminaItem == null) return;
+
+            if (EquippedItems.Contains(gearSlot))
+                itemSlot = $"{itemSlot} (Equipped)";
+            if (FoundItems.Contains(gearSlot))
+                itemSlot = $"{itemSlot} (In Armoury Chest)";
 
             ImGui.Text(itemSlot);
             using (var table = ImRaii.Table($"#XivItem-{itemSlot}", 2, ImGuiTableFlags.SizingFixedFit))
@@ -383,7 +390,7 @@ namespace BisTracker.BiS
                         }
                     }
                 }
-            } 
+            }
         }
 
         private static void DrawItemIcon(Item icon)
@@ -399,6 +406,8 @@ namespace BisTracker.BiS
             XivGearAppChosenBis = null;
             SavedBis = null;
             EtroResponse = null;
+            EquippedItems.Clear();
+            FoundItems.Clear();
         }
 
         private static void ResetInputs()
@@ -439,6 +448,15 @@ namespace BisTracker.BiS
             if (XivGearAppResponse == null) XivGearAppResponse = new(true);
 
             Svc.Log.Debug($"XivGearApp Reponse (Error? {XivGearAppResponse?.Error.ToString() ?? "NULL"}): {XivGearAppResponse?.Name ?? "NULL"}");
+
+            if (XivGearAppResponse!.Items != null)
+            {
+                JobBis jobBis = new JobBis();
+                jobBis.CreateBisItemsFromXivGearAppSetItems(XivGearAppResponse.Items);
+
+                CheckForItemsEquipped(jobBis);
+                CheckForItemsInArmouryChest(jobBis);
+            }
         }
 
         private static async void FetchBisFromEtro()
@@ -448,6 +466,89 @@ namespace BisTracker.BiS
             if (EtroResponse == null) EtroResponse = new(true);
 
             Svc.Log.Debug($"Etro Reponse (Error? {EtroResponse?.Error.ToString() ?? "NULL"}): {EtroResponse?.Name ?? "NULL"}");
+
+            EtroItemCheck();
+        }
+
+        public static void UpdateItemCheck()
+        {
+            EquippedItems.Clear();
+            FoundItems.Clear();
+
+            switch(SheetType)
+            {
+                case BisSheetType.Saved:
+                    if (SavedBis == null) return;
+                    CheckForItemsEquipped(SavedBis);
+                    CheckForItemsInArmouryChest(SavedBis);
+                    break;
+
+                case BisSheetType.Etro:
+                    EtroItemCheck();
+                    break;
+
+                case BisSheetType.XIVGearApp:
+                    XIVGearAppItemCheck();
+                    break;
+
+                case BisSheetType.None:
+                default:
+                    break;
+            }
+        }
+
+        private static void EtroItemCheck()
+        {
+            if (EtroResponse == null) return;
+            JobBis jobBis = new JobBis();
+            jobBis.PopulateBisItemsFromEtro(EtroResponse);
+
+            CheckForItemsEquipped(jobBis);
+            CheckForItemsInArmouryChest(jobBis);
+        }
+
+        private static void XIVGearAppItemCheck()
+        {
+            if (XivGearAppChosenBis == null) return;
+
+            JobBis jobBis = new JobBis();
+            jobBis.CreateBisItemsFromXivGearAppSetItems(XivGearAppChosenBis);
+
+            CheckForItemsEquipped(jobBis);
+            CheckForItemsInArmouryChest(jobBis);
+        }
+
+        private static unsafe void CheckForItemsEquipped(JobBis bis)
+        {
+            if (bis.BisItems == null) return;
+            foreach (var item in bis.BisItems)
+            {
+                if (item.Id == 0) { continue; }
+
+                Svc.Log.Debug($"Checking for equipped item: {item.Id}");
+                if (CharacterInfo.EquippedGear->GetInventorySlot((int) item.GearSlot)->ItemId == item.Id)
+                {
+                    Svc.Log.Debug($"Found equipped item: {item.Id}");
+                    EquippedItems.Add(item.GearSlot);
+                }
+            }
+        }
+
+        private static void CheckForItemsInArmouryChest(JobBis bis)
+        {
+            if (bis.BisItems == null) return;
+            foreach (var item in bis.BisItems.Where(x => !FoundItems.Contains(x.GearSlot)))
+            {
+                if (item.Id == 0) { continue; }
+
+                Svc.Log.Debug($"Checking for armoury chest ({item.GearSlot.ToString()}) item: {item.Id}");
+                int? acItemSlot = CharacterInfo.SearchForItemInArmouryChest(item.Id, item.GearSlot);
+                if (acItemSlot.HasValue)
+                {
+                    Svc.Log.Debug($"Found armoury chest ({item.GearSlot.ToString()}) item: {item.Id}");
+                    FoundItems.Add(item.GearSlot);
+                }
+            }
         }
 
         private static void SaveBisSelection()
@@ -488,6 +589,9 @@ namespace BisTracker.BiS
             Svc.Log.Debug($"Saved bis found for {SelectedJobPreview}.");
             SheetType = BisSheetType.Saved;
             SavedBis = jobBis;
+
+            CheckForItemsEquipped(jobBis);
+            CheckForItemsInArmouryChest(jobBis);
         }
 
         private static void DeleteBisByName(string? setName = null)
