@@ -80,8 +80,8 @@ namespace BisTracker.UI
                     if (!componentNode->IsVisible())
                         return;
 
-                    if (!IsEquippedTab(addonPtr->UldManager.NodeList[26]->GetAsAtkComponentDropdownList()))
-                        return;
+                    //if (!IsEquippedTab(addonPtr->UldManager.NodeList[26]->GetAsAtkComponentDropdownList()))
+                    //    return;
 
                     var inventoryItemListComponentNode = addonPtr->UldManager.NodeList[17]->GetAsAtkComponentList();
                     AtkComponentBase* selectedItemPointer = GetSelectedItem(inventoryItemListComponentNode);
