@@ -8,6 +8,8 @@ using System.IO;
 using ECommons.ImGuiMethods;
 using System.Numerics;
 using BisTracker.BiS;
+using Dalamud.Interface.Components;
+using Dalamud.Utility;
 
 namespace BisTracker.UI;
 
@@ -93,6 +95,9 @@ internal unsafe class PluginUI : Window
                     {
                         OpenWindow = OpenWindow.Settings;
                     }
+
+                    ImGui.SetCursorPosY(ImGui.GetContentRegionMax().Y - 25f);
+                    ImGuiEx.LineCentered("###Donate", () => { if (ImGuiComponents.IconButtonWithText(Dalamud.Interface.FontAwesomeIcon.Coffee, $" Buy me a ko-fi? ♥")) { Util.OpenLink("https://ko-fi.com/yhumi"); }; ImGuiComponents.HelpMarker("Donations are so kind and appreciated so much, but if you find the plugin useful that's more than enough! ♥"); });
                 }
 
                 ImGui.PopStyleVar();

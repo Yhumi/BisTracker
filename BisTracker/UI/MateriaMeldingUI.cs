@@ -213,7 +213,7 @@ namespace BisTracker.UI
 
         public unsafe static string GetStringFromTextNode(AtkTextNode* textNode)
         {
-            return textNode->NodeText.ExtractText();
+            return textNode->NodeText.ExtractText().Replace("", "").TrimEnd();
         }
 
         public unsafe static void DrawOptions()
