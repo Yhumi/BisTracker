@@ -65,12 +65,14 @@ public class Configuration : IPluginConfiguration
         {
             foreach(var jobBis in SavedBis)
             {
+                if (jobBis.XivGearAppSetItems == null) continue; //Safety in case something goes wrong
                 jobBis.CreateBisItemsFromXivGearAppSetItems(jobBis.XivGearAppSetItems);
                 jobBis.SelectedXivGearAppSet = null;
                 jobBis.XivGearAppSetItems = null;
             }
         }
 
+        Version = 2;
         P.Config.Save();
     }
 }

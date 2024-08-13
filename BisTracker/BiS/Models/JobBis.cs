@@ -67,6 +67,18 @@ namespace BisTracker.BiS.Models
             BisItems.Add(new JobBis_Item(setItems.RingRight, CharacterEquippedGearSlotIndex.RightRing));
             BisItems.Add(new JobBis_Item(setItems.RingLeft, CharacterEquippedGearSlotIndex.LeftRing));
         }
+
+        public void PopulateBisItemsFromEtro(EtroResponse etroResponse)
+        {
+            if (etroResponse == null) return;
+            if (BisItems == null) BisItems = new List<JobBis_Item>();
+            if (etroResponse.SetItems == null) return;
+
+            foreach (var item in etroResponse.SetItems)
+            {
+                BisItems.Add(new(item));
+            }
+        }
     }
 
     public class JobBis_Item
@@ -84,10 +96,26 @@ namespace BisTracker.BiS.Models
 
             if (item != null && item.Materia != null)
             {
-                foreach(var materia in item.Materia)
+                foreach (var materia in item.Materia)
                 {
                     Materia.Add(new JobBis_ItemMateria(materia));
                 }
+            }
+        }
+
+        public JobBis_Item(EtroItem? item)
+        {
+            Id = item?.Id ?? 0;
+            GearSlot = item?.GearSlot ?? CharacterEquippedGearSlotIndex.SoulCrystal;
+            Materia = new List<JobBis_ItemMateria>();
+
+            if (item != null && item.Materia != null)
+            {
+                Materia.Add(new(item.Materia.MateriaSlot1));
+                Materia.Add(new(item.Materia.MateriaSlot2));
+                Materia.Add(new(item.Materia.MateriaSlot3));
+                Materia.Add(new(item.Materia.MateriaSlot4));
+                Materia.Add(new(item.Materia.MateriaSlot5));
             }
         }
     }
@@ -101,6 +129,11 @@ namespace BisTracker.BiS.Models
         public JobBis_ItemMateria(XivGearApp_Materia materia)
         {
             Id = materia.Id; 
+        }
+
+        public JobBis_ItemMateria(int itemId)
+        {
+            Id = itemId;
         }
     }
 }
