@@ -72,6 +72,7 @@ internal unsafe class PluginUI : Window
                 ImGui.TableNextColumn();
 
                 var regionSize = ImGui.GetContentRegionAvail();
+                ImGui.PushStyleVar(ImGuiStyleVar.SelectableTextAlign, new Vector2(0.5f, 0.5f));
                 using (var leftChild = ImRaii.Child($"###BisTrackerLeftSide", regionSize with { Y = topLeftSideHeight }, false, ImGuiWindowFlags.NoDecoration))
                 {
                     var imagePath = Path.Combine(Svc.PluginInterface.AssemblyLocation.DirectoryName!, "Images/dog.png");
@@ -97,8 +98,12 @@ internal unsafe class PluginUI : Window
                     }
 
                     ImGui.SetCursorPosY(ImGui.GetContentRegionMax().Y - 25f);
-                    ImGuiEx.LineCentered("###Donate", () => { if (ImGuiComponents.IconButtonWithText(Dalamud.Interface.FontAwesomeIcon.Coffee, $" Buy me a ko-fi? ♥")) { Util.OpenLink("https://ko-fi.com/yhumi"); }; ImGuiComponents.HelpMarker("Donations are so kind and appreciated so much, but if you find the plugin useful that's more than enough! ♥"); });
+                    if (ImGui.Selectable($"About", OpenWindow == OpenWindow.About))
+                    {
+                        OpenWindow = OpenWindow.About;
+                    };
                 }
+                ImGui.PopStyleVar();
 
                 ImGui.PopStyleVar();
                 ImGui.TableNextColumn();
@@ -111,6 +116,9 @@ internal unsafe class PluginUI : Window
                             break;
                         case OpenWindow.Settings:
                             SettingsUI.Draw();
+                            break;
+                        case OpenWindow.About:
+                            AboutUI.Draw();
                             break;
                         case OpenWindow.None:
                             break;
@@ -131,5 +139,6 @@ public enum OpenWindow
 {
     None = 0,
     Bis = 1,
-    Settings = 2
+    Settings = 2,
+    About = 3
 }

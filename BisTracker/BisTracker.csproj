@@ -5,7 +5,7 @@
     <PropertyGroup>
         <Authors></Authors>
         <Company></Company>
-        <Version>1.1.3.1</Version>
+        <Version>1.1.3.2</Version>
         <Description>A sample plugin.</Description>
         <Copyright>Yhumi</Copyright>
     </PropertyGroup>

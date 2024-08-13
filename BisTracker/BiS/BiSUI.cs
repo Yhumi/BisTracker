@@ -75,108 +75,114 @@ namespace BisTracker.BiS
                 LoadBisFromConfig();
             }
 
-            ImGui.TextWrapped("Job");
-            SelectedJobPreview = SelectedJob != 0 ? JobNameCleanup(LuminaSheets.ClassJobSheet[SelectedJob]) : string.Empty;
-            if (ImGui.BeginCombo("###BisJobSelection", SelectedJobPreview))
+            if(ImGui.CollapsingHeader("BiS Selection", ImGuiTreeNodeFlags.Selected))
             {
-                ImGui.Text("Search");
-                ImGui.SameLine();
-                ImGui.InputText("###BisJobSearch", ref Search, 100);
-
-                if (ImGui.Selectable("", SelectedJob == 0))
+                ImGui.TextWrapped("Job");
+                SelectedJobPreview = SelectedJob != 0 ? JobNameCleanup(LuminaSheets.ClassJobSheet[SelectedJob]) : string.Empty;
+                if (ImGui.BeginCombo("###BisJobSelection", SelectedJobPreview))
                 {
-                    if (0 != SelectedJob) { ResetBis(); }
-                    SelectedJob = 0;
-                    SelectedJobPreview = string.Empty;
-                }
+                    ImGui.Text("Search");
+                    ImGui.SameLine();
+                    ImGui.InputText("###BisJobSearch", ref Search, 100);
 
-                foreach (var job in LuminaSheets.ClassJobSheet.Values
-                    .Where(x => !ExcludedJobs.Contains(x.Abbreviation.RawString))
-                    .Where(x => x.Name.RawString.Contains(Search, StringComparison.CurrentCultureIgnoreCase) || x.Abbreviation.RawString.Contains(Search, StringComparison.CurrentCultureIgnoreCase))
-                    .OrderBy(x => x.Name.RawString))
-                {
-                    
-                    bool selected = ImGui.Selectable(JobNameCleanup(job), job.RowId == SelectedJob);
-
-                    if (selected)
+                    if (ImGui.Selectable("", SelectedJob == 0))
                     {
-                        if (job.RowId != SelectedJob) 
-                        { 
-                            ResetBis();
-                            ResetInputs();
-                        }
-                        SelectedJob = job.RowId;
-                        SelectedJobPreview = SelectedJob != 0 ? JobNameCleanup(LuminaSheets.ClassJobSheet[SelectedJob]) : string.Empty;
-                        LoadBisFromConfig();
+                        if (0 != SelectedJob) { ResetBis(); }
+                        SelectedJob = 0;
+                        SelectedJobPreview = string.Empty;
                     }
+
+                    foreach (var job in LuminaSheets.ClassJobSheet.Values
+                        .Where(x => !ExcludedJobs.Contains(x.Abbreviation.RawString))
+                        .Where(x => x.Name.RawString.Contains(Search, StringComparison.CurrentCultureIgnoreCase) || x.Abbreviation.RawString.Contains(Search, StringComparison.CurrentCultureIgnoreCase))
+                        .OrderBy(x => x.Name.RawString))
+                    {
+
+                        bool selected = ImGui.Selectable(JobNameCleanup(job), job.RowId == SelectedJob);
+
+                        if (selected)
+                        {
+                            if (job.RowId != SelectedJob)
+                            {
+                                ResetBis();
+                                ResetInputs();
+                            }
+                            SelectedJob = job.RowId;
+                            SelectedJobPreview = SelectedJob != 0 ? JobNameCleanup(LuminaSheets.ClassJobSheet[SelectedJob]) : string.Empty;
+                            LoadBisFromConfig();
+                        }
+                    }
+
+                    ImGui.EndCombo();
                 }
 
-                ImGui.EndCombo();
-            }
-
-            if (SelectedJob != 0)
-            {
-                if (P?.Config?.SavedBis != null)
+                if (SelectedJob != 0)
                 {
-                    ImGui.Separator();
-                    ImGui.TextWrapped("Stored Sets");
-                    ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X / 2);
-                    if (ImGui.BeginCombo("###StoredBisSets", SelectedSavedSet))
+                    if (P?.Config?.SavedBis != null)
                     {
-                        ImGui.Text("Search");
-                        ImGui.SameLine();
-                        ImGui.InputText("###StoredBisSetSearch", ref StoredBisSearch, 100);
-
-                        if (ImGui.Selectable("", SelectedSavedSet == string.Empty))
+                        ImGui.Separator();
+                        ImGui.TextWrapped("Stored Sets");
+                        ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X / 2);
+                        if (ImGui.BeginCombo("###StoredBisSets", SelectedSavedSet))
                         {
-                            if (string.Empty != SelectedSavedSet) { ResetBis(); }
+                            ImGui.Text("Search");
+                            ImGui.SameLine();
+                            ImGui.InputText("###StoredBisSetSearch", ref StoredBisSearch, 100);
+
+                            if (ImGui.Selectable("", SelectedSavedSet == string.Empty))
+                            {
+                                if (string.Empty != SelectedSavedSet) { ResetBis(); }
+                                SelectedSavedSet = string.Empty;
+                            }
+
+                            foreach (var savedSet in P.Config.SavedBis.Where(x => x.Job == SelectedJob))
+                            {
+                                bool selected = ImGui.Selectable($"{savedSet.Name}", savedSet.Name == SelectedSavedSet);
+
+                                if (selected)
+                                {
+                                    SelectedSavedSet = savedSet.Name;
+                                    ResetBis();
+                                    LoadBisFromConfig(savedSet.Name);
+                                }
+                            }
+
+                            ImGui.EndCombo();
+                        }
+
+                        ImGui.SameLine(ImGui.GetContentRegionAvail().X / 2 + 10f.Scale());
+                        if (ImGuiUtil.DrawDisabledButton($"Delete Set", default(Vector2), DeleteButtonTooltip(), !ImGui.GetIO().KeyCtrl, false))
+                        {
+                            ResetBis(); //Deselect the set.
+                            DeleteBisByName(SelectedSavedSet);
                             SelectedSavedSet = string.Empty;
                         }
-
-                        foreach (var savedSet in P.Config.SavedBis.Where(x => x.Job == SelectedJob))
-                        {
-                            bool selected = ImGui.Selectable($"{savedSet.Name}", savedSet.Name == SelectedSavedSet);
-
-                            if (selected)
-                            {
-                                SelectedSavedSet = savedSet.Name;
-                                ResetBis();
-                                LoadBisFromConfig(savedSet.Name);
-                            }
-                        }
-
-                        ImGui.EndCombo();
                     }
 
+                    ImGui.Separator();
+                    ImGui.TextWrapped("Bis Link");
+                    ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X / 2);
+                    ImGui.InputText("###BisLinkInput", ref BisLink, 300);
                     ImGui.SameLine(ImGui.GetContentRegionAvail().X / 2 + 10f.Scale());
-                    if (ImGuiUtil.DrawDisabledButton($"Delete Set", default(Vector2), DeleteButtonTooltip(), !ImGui.GetIO().KeyCtrl, false))
+                    if (ImGui.Button($"Import Bis"))
                     {
-                        ResetBis(); //Deselect the set.
-                        DeleteBisByName(SelectedSavedSet);
+                        ResetBis();
                         SelectedSavedSet = string.Empty;
+
+                        Uri.TryCreate(BisLink, UriKind.Absolute, out BisLinkUri);
+                        if (BisLinkUri == null || !ValidHosts.Contains(BisLinkUri.Host)) { ImGui.TextWrapped($"Invalid URI."); return; }
+
+                        FetchBisFromHost();
+
                     }
+
+                    ImGui.Separator();
                 }
+            }
 
-                ImGui.Separator();
-                ImGui.TextWrapped("Bis Link");
-                ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X / 2);
-                ImGui.InputText("###BisLinkInput", ref BisLink, 300);
-                ImGui.SameLine(ImGui.GetContentRegionAvail().X / 2 + 10f.Scale());
-                if(ImGui.Button($"Import Bis"))
-                {
-                    ResetBis();
-                    SelectedSavedSet = string.Empty;
-
-                    Uri.TryCreate(BisLink, UriKind.Absolute, out BisLinkUri);
-                    if (BisLinkUri == null || !ValidHosts.Contains(BisLinkUri.Host)) { ImGui.TextWrapped($"Invalid URI."); return; }
-
-                    FetchBisFromHost();
-
-                }
-
-                ImGui.Separator();
-
-                switch(SheetType)
+            if (SheetType != BisSheetType.None && ImGui.CollapsingHeader("BiS Items"))
+            {
+                switch (SheetType)
                 {
                     case BisSheetType.Saved:
                         DrawSavedBis();
