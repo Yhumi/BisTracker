@@ -376,7 +376,7 @@ namespace BisTracker.BiS
                 {
                     foreach (var materia in gearAppItem.Materia)
                     {
-                        if (materia.Id > -1)
+                        if (materia.Id > 0)
                         {
                             Item? materiaItem = LuminaSheets.ItemSheet?[(uint)materia.Id];
                             ImGui.Text($"\t{materiaItem?.Name}");

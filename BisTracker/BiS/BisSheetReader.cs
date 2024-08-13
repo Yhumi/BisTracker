@@ -58,8 +58,10 @@ namespace BisTracker.BiS
             string? jsonResponse = await FetchEtroBisAsync(etroSetId);
             if (jsonResponse == null) { return null; }
 
-            EtroResponse etroResponse = new EtroResponse(jsonResponse);
-            etroResponse.BuildItemsFromEtroResponse(jsonResponse);
+            EtroApiReponse? etroApiReponse = JsonConvert.DeserializeObject<EtroApiReponse?>(jsonResponse);
+            if (etroApiReponse == null) { return null; }
+
+            EtroResponse etroResponse = new EtroResponse(etroApiReponse);
             return etroResponse;
         }
 
