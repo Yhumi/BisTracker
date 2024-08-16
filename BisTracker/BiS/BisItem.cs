@@ -63,7 +63,7 @@ namespace BisTracker.BiS
         public BisMateria(JobBis_ItemMateria materia)
         {
             Id = (uint)materia.Id;
-            ItemName = LuminaSheets.ItemSheet[(uint)materia.Id].Name;
+            ItemName = materia.GetMateriaLabel();
         }
     }
 }

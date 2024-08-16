@@ -22,6 +22,7 @@ public class Configuration : IPluginConfiguration
     public bool ShowMateriaMeldingWindows = true;
     public bool HighlightBisMateriaInMateriaMelder = true;
     public bool ShowAugmentedMeldsForUnaugmentedPieces = true;
+    public bool UseMateriaNameInsteadOfMateriaValue = false;
 
     [NonSerialized]
     public int AccessoryCost = 375;
@@ -76,7 +77,7 @@ public class Configuration : IPluginConfiguration
             foreach(var jobBis in SavedBis)
             {
                 if (jobBis.XivGearAppSetItems == null) continue; //Safety in case something goes wrong
-                jobBis.CreateBisItemsFromXivGearAppSetItems(jobBis.XivGearAppSetItems);
+                jobBis.CreateBisItemsFromXivGearAppSetItems(jobBis.XivGearAppSetItems, null);
                 jobBis.SelectedXivGearAppSet = null;
                 jobBis.XivGearAppSetItems = null;
             }

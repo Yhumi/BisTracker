@@ -17,6 +17,7 @@ namespace BisTracker.UI
             bool ShowMateriaMeldingWindows = P.Config.ShowMateriaMeldingWindows;
             bool HighlightBisMateriaInMateriaMelder = P.Config.HighlightBisMateriaInMateriaMelder;
             bool ShowAugmentedMeldsForUnaugmentedPieces = P.Config.ShowAugmentedMeldsForUnaugmentedPieces;
+            bool UseMateriaNameInsteadOfMateriaValue = P.Config.UseMateriaNameInsteadOfMateriaValue;
 
             ImGui.Separator();
 
@@ -36,7 +37,7 @@ namespace BisTracker.UI
                         P.Config.HighlightBisMateriaInMateriaMelder = HighlightBisMateriaInMateriaMelder;
                         P.Config.Save();
                     }
-                    ImGuiComponents.HelpMarker($"Color the names of materia to be melded into the selected BiS gear piece.");
+                    ImGuiComponents.HelpMarker($"Color the names of materia to be melded into the selected BiS gear piece. Please note: This currently only works on the equipped tab.");
                 }
 
                 if (ShowMateriaMeldingWindows)
@@ -48,6 +49,13 @@ namespace BisTracker.UI
                     }
                     ImGuiComponents.HelpMarker($"Show the melds for the augmented version of an unaugmented piece if the augmented version is part of the selected bis.");
                 }
+
+                if (ImGui.Checkbox("Use Materia Name instead of Materia Value", ref UseMateriaNameInsteadOfMateriaValue))
+                {
+                    P.Config.UseMateriaNameInsteadOfMateriaValue = UseMateriaNameInsteadOfMateriaValue;
+                    P.Config.Save();
+                }
+                ImGuiComponents.HelpMarker($"Show the materia name (Heavens' Eye Materia XII) instead of its value (Direct Hit +54).");
             }
         }
     } 

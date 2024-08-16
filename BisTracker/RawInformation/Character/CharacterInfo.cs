@@ -1,3 +1,4 @@
+using BisTracker.BiS;
 using ECommons;
 using ECommons.DalamudServices;
 using ECommons.ExcelServices;
@@ -5,7 +6,7 @@ using ECommons.GameFunctions;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Lumina.Excel.GeneratedSheets;
+using Lumina.Excel.GeneratedSheets2;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,7 +30,7 @@ namespace BisTracker.RawInformation.Character
             EquippedGear = InventoryManager.Instance()->GetInventoryContainer(InventoryType.EquippedItems);
         }
 
-        public static unsafe int? SearchForItemInArmouryChest(int itemId, CharacterEquippedGearSlotIndex gearSlot)
+        public static unsafe InventoryItem* SearchForItemInArmouryChest(int itemId, CharacterEquippedGearSlotIndex gearSlot)
         {
             switch (gearSlot)
             {
@@ -72,21 +73,96 @@ namespace BisTracker.RawInformation.Character
             }
         }
 
-        private static unsafe int? SearchForItemInInventory(InventoryContainer* inv, int itemId)
+        public static unsafe InventoryItem* SearchForItemInPlayerInventory(int itemId)
         {
-            uint invSize = inv->Size;
-            for (int i = 0; i < invSize; i++)
+            var inv1Item = SearchForItemInInventory(InventoryManager.Instance()->GetInventoryContainer(InventoryType.Inventory1), itemId);
+            if (inv1Item != null) return inv1Item;
+
+            var inv2Item = SearchForItemInInventory(InventoryManager.Instance()->GetInventoryContainer(InventoryType.Inventory2), itemId);
+            if (inv2Item != null) return inv2Item;
+
+            var inv3Item = SearchForItemInInventory(InventoryManager.Instance()->GetInventoryContainer(InventoryType.Inventory3), itemId);
+            if (inv3Item != null) return inv3Item;
+
+            return SearchForItemInInventory(InventoryManager.Instance()->GetInventoryContainer(InventoryType.Inventory4), itemId);
+        }
+
+        public static unsafe InventoryItem* GetEquippedItem(int itemId)
+        {
+            var equipSlotCategory = LuminaSheets.ItemSheet[(uint)itemId].EquipSlotCategory.Value;
+            if (equipSlotCategory == null) return null;
+
+            var equippedSlot = GetSlotIndexFromEquipSlotCategory(equipSlotCategory);
+            if (equippedSlot == null) return null;
+
+            var equippedItem = EquippedGear->GetInventorySlot((int)equippedSlot);
+            if (equippedItem != null && equippedItem->ItemId == itemId) return equippedItem;
+
+            if (equippedSlot == CharacterEquippedGearSlotIndex.RightRing)
             {
-                if (inv->GetInventorySlot(i)->ItemId == itemId)
-                    return i;
+                var otherRing = EquippedGear->GetInventorySlot((int)CharacterEquippedGearSlotIndex.LeftRing);
+                if (otherRing->ItemId == itemId) return otherRing;
+            }
+
+            if (equippedSlot == CharacterEquippedGearSlotIndex.LeftRing)
+            {
+                var otherRing = EquippedGear->GetInventorySlot((int)CharacterEquippedGearSlotIndex.RightRing);
+                if (otherRing->ItemId == itemId) return otherRing;
             }
 
             return null;
         }
 
-        public static unsafe Span<ushort> GetItemMateria(CharacterEquippedGearSlotIndex index) => GetInventoryItem(index)->Materia;
+        private static unsafe InventoryItem* SearchForItemInInventory(InventoryContainer* inv, int itemId)
+        {
+            uint invSize = inv->Size;
+            for (int i = 0; i < invSize; i++)
+            {
+                if (inv->GetInventorySlot(i)->ItemId == itemId)
+                    return inv->GetInventorySlot(i);
+            }
 
-        public static unsafe InventoryItem* GetInventoryItem(CharacterEquippedGearSlotIndex index) => EquippedGear->GetInventorySlot((int) index);
+            return null;
+        }
+
+        public static unsafe InventoryItem* FindInventoryItem(int itemId)
+        {
+            //Firstly check for equipped item
+            var invItem = GetEquippedItem(itemId);
+            if (invItem != null && invItem->ItemId == itemId) 
+                return invItem;
+
+            //Now check in AC
+            var equipSlotCategory = LuminaSheets.ItemSheet[(uint)itemId].EquipSlotCategory.Value;
+            if (equipSlotCategory == null) 
+                return null;
+
+            var equippedSlot = GetSlotIndexFromEquipSlotCategory(equipSlotCategory);
+            if (equippedSlot == null) 
+                return null;
+
+            var acItem = SearchForItemInArmouryChest(itemId, equippedSlot.Value);
+            if (acItem != null)
+                return acItem;
+
+            //Finally check in inv itself
+            return SearchForItemInPlayerInventory(itemId);
+        }
+
+        public static unsafe InventoryItem* FindUnaugmentedVersionOfAugmentedTomeItem(int itemId)
+        {
+            var isAugmentedItem = LuminaSheets.ItemSheet[(uint)itemId].Name.ExtractText().ToLower().Contains("augmented");
+
+            //Dont really need to do anything fancy if its the unaugmented version, we'd just find that.
+            //I cant imagine a bis that uses unaugmented versions but people have the aug version laying around. Maybe I account for that in the future.
+            if (!isAugmentedItem) return FindInventoryItem(itemId); 
+
+            var unaugmentedName = LuminaSheets.ItemSheet[(uint)itemId].Name.ExtractText().Replace("Augmented", "").Trim();
+            var unaugmentedItem = LuminaSheets.ItemSheet.Values.Where(x => x.Name.ExtractText().ToLower() == unaugmentedName.ToLower()).FirstOrDefault();
+            if (unaugmentedItem == null) return null;
+
+            return FindInventoryItem((int)unaugmentedItem.RowId);
+        }
 
         public static CharacterEquippedGearSlotIndex? GetSlotIndexFromEquipSlotCategory(EquipSlotCategory? category)
         {

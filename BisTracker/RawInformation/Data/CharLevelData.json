@@ -1,0 +1,62 @@
+{
+    "70": {
+        "level": 70,
+        "baseMainStat": 292,
+        "baseSubStat": 364,
+        "levelDiv": 900,
+        "hp": 1700,
+        "hpScalar": {
+            "Tank": 18.8,
+            "other": 14
+        },
+        "mainStatPowerMod": {
+            "Tank": 105,
+            "other": 125
+        }
+    },
+    "80": {
+        "level": 80,
+        "baseMainStat": 340,
+        "baseSubStat": 380,
+        "levelDiv": 1300,
+        "hp": 2000,
+        "hpScalar": {
+            "Tank": 26.6,
+            "other": 18.8
+        },
+        "mainStatPowerMod": {
+            "Tank": 115,
+            "other": 165
+        }
+    },
+    "90": {
+        "level": 90,
+        "baseMainStat": 390,
+        "baseSubStat": 400,
+        "levelDiv": 1900,
+        "hp": 3000,
+        "hpScalar": {
+            "Tank": 34.6,
+            "other": 24.3
+        },
+        "mainStatPowerMod": {
+            "Tank": 156,
+            "other": 195
+        }
+    },
+    "100": {
+        "level": 100,
+        "baseMainStat": 440,
+        "baseSubStat": 420,
+        "levelDiv": 2780,
+        "hp": 4000,
+        "hpScalar": {
+            "Tank": 43,
+            "other": 30.1
+        },
+        "mainStatPowerMod": {
+            "Tank": 190,
+            "other": 237
+        }
+    }
+}
