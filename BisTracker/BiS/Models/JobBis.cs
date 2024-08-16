@@ -2,16 +2,17 @@ using BisTracker.RawInformation;
 using BisTracker.RawInformation.Character;
 using ECommons;
 using ECommons.DalamudServices;
-using Lumina.Excel.GeneratedSheets;
 using Lumina.Excel.GeneratedSheets2;
 using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using static FFXIVClientStructs.FFXIV.Client.System.String.Utf8String.Delegates;
 using static Lumina.Data.Parsing.Layer.LayerCommon;
 
 namespace BisTracker.BiS.Models
@@ -209,7 +210,6 @@ namespace BisTracker.BiS.Models
                     }
 
                     stat.Value = newVal;
-                    Svc.Log.Debug($"New value: {stat.Value}");
                 }
 
                 //Add the remaining substat base values
@@ -226,10 +226,40 @@ namespace BisTracker.BiS.Models
                         var subStatSetParameter = new JobBis_Parameter() { Param = subStat.Value, Value = (short)levelData.BaseSubStat };
                         SetParameters.Add(subStatSetParameter);
                     }
-                        
                 }
             }
 
+            if (jobCategory.Contains("hand"))
+            {
+                var cpParam = SetParameters.Where(x => x.Param == ConstantData.DoHStatIds["CP"]).FirstOrDefault();
+                if (cpParam == null)
+                {
+                    cpParam = new JobBis_Parameter()
+                    {
+                        Param = ConstantData.DoHStatIds["CP"],
+                        Value = 0
+                    };
+                    SetParameters.Add(cpParam);
+                }
+
+                SetParameters.Where(x => x.Param == ConstantData.DoHStatIds["CP"]).First().Value = (short)(cpParam.Value + ConstantData.LevelStats[100].CP);
+            }
+
+            if (jobCategory.Contains("land"))
+            {
+                var gpParam = SetParameters.Where(x => x.Param == ConstantData.DoHStatIds["GP"]).FirstOrDefault();
+                if (gpParam == null)
+                {
+                    gpParam = new JobBis_Parameter()
+                    {
+                        Param = ConstantData.DoHStatIds["GP"],
+                        Value = 0
+                    };
+                    SetParameters.Add(gpParam);
+                }
+
+                SetParameters.Where(x => x.Param == ConstantData.DoHStatIds["GP"]).First().Value = (short)(gpParam.Value + ConstantData.LevelStats[100].GP);
+            }
 
             //Add food data
             if (Food != null)
@@ -366,37 +396,43 @@ namespace BisTracker.BiS.Models
         public void SetupParams()
         {
             BaseParameters = new List<JobBis_Parameter>();
-            SpecialParameters = new List<JobBis_Parameter>();
 
-            foreach (var baseParam in LuminaSheets.ItemSheet[(uint)Id]?.BaseParam ?? [])
+            //Svc.Log.Debug($"[{ItemName}] Use HQ Stats? {LuminaSheets.ItemSheet[(uint)Id]?.CanBeHq}");
+            var useHq = LuminaSheets.ItemSheet[(uint)Id]?.CanBeHq ?? false;
+            var paramItem = LuminaSheets.ItemSheet[(uint)Id];
+
+            foreach (var baseParam in paramItem?.BaseParam ?? [])
             {
                 if (baseParam != null && baseParam.Value.RowId != 0)
                 {
                     var index = LuminaSheets.ItemSheet[(uint)Id]?.BaseParam.IndexOf(x => x.Value.RowId == baseParam.Value.RowId);
                     if (index != null)
                     {
+                        short val = paramItem.BaseParamValue[index.Value];
+
+                        //Svc.Log.Debug($"[{ItemName}] {LuminaSheets.BaseParamSheet[baseParam.Value.RowId]?.Name} ({baseParam.Value.RowId}): {val}");
                         BaseParameters.Add(new JobBis_Parameter()
                         {
                             Param = baseParam.Value.RowId,
-                            Value = LuminaSheets.ItemSheet[(uint)Id].BaseParamValue[index.Value]
+                            Value = val
                         });
                     }
                 }
             }
-
-            foreach (var specialParam in LuminaSheets.ItemSheet[(uint)Id]?.BaseParamSpecial ?? [])
+            
+            if (useHq)
             {
-                if (specialParam != null && specialParam.Value.RowId != 0)
+                foreach (var specialParam in paramItem?.BaseParamSpecial ?? [])
                 {
-                    var index = LuminaSheets.ItemSheet[(uint)Id]?.BaseParamSpecial.IndexOf(x => x.Value.RowId == specialParam.Value.RowId);
-                    if (index != null)
+                    if (specialParam != null && specialParam.Value.RowId != 0)
                     {
-                        SpecialParameters.Add(new JobBis_Parameter()
+                        var index = paramItem?.BaseParamSpecial.IndexOf(x => x.Value.RowId == specialParam.Value.RowId);
+                        if (index != null && BaseParameters.FirstOrDefault(x => x.Param == specialParam.Value.RowId) != null)
                         {
-                            Param = specialParam.Value.RowId,
-                            Value = LuminaSheets.ItemSheet[(uint)Id].BaseParamValueSpecial[index.Value]
-                        });
-                    } 
+                            BaseParameters.First(x => x.Param == specialParam.Value.RowId)!.Value += paramItem.BaseParamValueSpecial[index.Value];
+                            //Svc.Log.Debug($"[{ItemName}] {LuminaSheets.BaseParamSheet[specialParam.Value.RowId]?.Name} ({specialParam.Value.RowId}): {BaseParameters.First(x => x.Param == specialParam.Value.RowId)!.Value}");
+                        }
+                    }
                 }
             }
 
@@ -410,7 +446,18 @@ namespace BisTracker.BiS.Models
         {
             if (BaseParameters == null) { return null; }
             var finalParameters = new List<JobBis_Parameter>();
-            finalParameters.AddRange(BaseParameters);
+
+            foreach (var param in BaseParameters)
+            {
+                finalParameters.Add(new(param));
+            }
+
+            //var itemLevel = LuminaSheets.ItemSheet[(uint)Id].ItemSeries.Value;
+            //PropertyInfo[] properties = typeof(ItemSeries).GetProperties();
+            //foreach (var property in properties)
+            //{
+            //    Svc.Log.Debug($"[{ItemName}][ItemSeries] Prop: {property.Name} | Val: {property.GetValue(itemLevel)}");
+            //}
 
             if (Materia != null)
             {
@@ -422,7 +469,12 @@ namespace BisTracker.BiS.Models
                     if (paramIndex > -1)
                     {
                         var itemParam = finalParameters[paramIndex];
-                        itemParam.Value += materia.MateriaParameter.Value;
+                        var value = itemParam.Value + materia.MateriaParameter.Value;
+
+                        var maxVal = LuminaSheets.GetMaxStatForItem((uint)Id, itemParam.Param);
+                        if (maxVal == null) continue;
+
+                        itemParam.Value = (short) Math.Min(maxVal.Value, value);
 
                         finalParameters[paramIndex] = itemParam;
                         continue;
@@ -435,6 +487,11 @@ namespace BisTracker.BiS.Models
                     };
                     finalParameters.Add(newParam);
                 }
+            }
+
+            foreach(var param in finalParameters)
+            {
+                Svc.Log.Debug($"[{ItemName}] [{LuminaSheets.BaseParamSheet[param.Param].Name} (Id {param.Param})] Base: {BaseParameters.FirstOrDefault(x => x.Param == param.Param)?.Value ?? 0} | Total: {param.Value}");
             }
 
             return finalParameters;
@@ -491,5 +548,12 @@ namespace BisTracker.BiS.Models
     {
         public uint Param { get; set; }
         public short Value { get; set; }
+
+        public JobBis_Parameter() { }
+        public JobBis_Parameter(JobBis_Parameter copy)
+        {
+            Param = copy.Param;
+            Value = copy.Value;
+        }
     }
 }

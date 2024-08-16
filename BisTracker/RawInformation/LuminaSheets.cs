@@ -1,3 +1,4 @@
+using BisTracker.RawInformation.Character;
 using ECommons;
 using ECommons.DalamudServices;
 using ECommons.ExcelServices;
@@ -5,6 +6,7 @@ using Lumina.Excel.GeneratedSheets2;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using static Lumina.Excel.GeneratedSheets2.SpecialShop;
@@ -54,6 +56,71 @@ namespace BisTracker.RawInformation
         {
             var item = ItemSheet.Where(x => x.Value.ItemAction.Value.Data[1] == itemFoodId).FirstOrDefault().Value;
             return item;
+        }
+
+        public static int? GetMaxStatForItem(uint itemId, uint paramId)
+        {
+            Item? item = ItemSheet?[itemId];
+            if (item == null) return null;
+            BaseParam? baseParam = BaseParamSheet?[paramId];
+            if (baseParam == null) return null;
+            if (item.ClassJobUse.Value == null || item.EquipSlotCategory.Value == null) return null;
+            if (item.BaseParamModifier >= baseParam.MeldParam.Length) return null;
+            if (item.LevelItem.Value == null) return null;
+
+            PropertyInfo[] properties = typeof(ItemLevel).GetProperties();
+            var baseValProp = properties.Where(x => x.Name.ToLower() == baseParam.Name.ExtractText().ToLower()).FirstOrDefault();
+            if (baseValProp == null) return null;
+
+            var baseVal = baseValProp.GetValue(item.LevelItem.Value);
+            if (baseVal == null) return null;
+            
+            var slotModifier = GetPercentageForItemSlot(baseParam, item.ClassJobUse.Value, item.EquipSlotCategory.Value);
+            if (slotModifier == null) return null;
+
+            var baseParamMeldModifier = baseParam.MeldParam[item.BaseParamModifier];
+            return (int) Math.Round((ushort) baseVal * slotModifier.Value / (baseParamMeldModifier * 10d));
+        }
+
+        public static ushort? GetPercentageForItemSlot(BaseParam param, ClassJob job, EquipSlotCategory equipSlotCategory)
+        {
+            CharacterEquippedGearSlotIndex? characterEquippedGearSlotIndex = CharacterInfo.GetSlotIndexFromEquipSlotCategory(equipSlotCategory);
+            if (characterEquippedGearSlotIndex == null) return null;
+
+            bool canEquipOffHand = IsJobTwoHanded(job);
+
+            switch (characterEquippedGearSlotIndex.Value) {
+                case CharacterEquippedGearSlotIndex.MainHand:
+                    return canEquipOffHand ? param.OneHandWeaponPercent : param.TwoHandWeaponPercent;
+                case CharacterEquippedGearSlotIndex.OffHand:
+                    return param.OffHandPercent;
+                case CharacterEquippedGearSlotIndex.Head:
+                    return param.HeadPercent;
+                case CharacterEquippedGearSlotIndex.Body:
+                    return param.ChestPercent;
+                case CharacterEquippedGearSlotIndex.Gloves:
+                    return param.HandsPercent;
+                case CharacterEquippedGearSlotIndex.Legs:
+                    return param.LegsPercent;
+                case CharacterEquippedGearSlotIndex.Feet:
+                    return param.FeetPercent;
+                case CharacterEquippedGearSlotIndex.Ears:
+                    return param.EarringPercent;
+                case CharacterEquippedGearSlotIndex.Neck:
+                    return param.NecklacePercent;
+                case CharacterEquippedGearSlotIndex.Wrists:
+                    return param.BraceletPercent;
+                case CharacterEquippedGearSlotIndex.RightRing:
+                case CharacterEquippedGearSlotIndex.LeftRing:
+                    return param.RingPercent;
+                default:
+                    return null;
+            }
+        }
+
+        public static bool IsJobTwoHanded(ClassJob job)
+        {
+            return ConstantData.TwoHandedJobs.Contains(job.Abbreviation.ToString().ToUpper());
         }
 
         //public static string GetSpecialShopContainingItem(int itemId)

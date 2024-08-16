@@ -57,6 +57,8 @@
         "mainStatPowerMod": {
             "Tank": 190,
             "other": 237
-        }
+        },
+        "cp": 180,
+        "gp": 400
     }
 }

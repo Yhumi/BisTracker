@@ -17,8 +17,18 @@ namespace BisTracker.RawInformation
         public static Dictionary<string, uint>? MainStatIds;
         public static Dictionary<string, uint>? FakeMainStatIds;
         public static Dictionary<string, uint>? SubStatIds;
+        public static Dictionary<string, uint>? DoHStatIds;
+        public static Dictionary<string, uint>? DoLStatIds;
 
-        //public static List<>
+        public static List<string> TwoHandedJobs = new List<string>()
+        {
+            "GLA", "CNJ", "THM", 
+            "PLD", "CRP", "WHM",
+            "BLM", "BSM", "ARM", 
+            "GSM", "LTW", "WVR", 
+            "ALC", "CUL", "MIN",
+            "BTN", "FSH"
+        };
 
         public static void Init()
         {
@@ -57,6 +67,20 @@ namespace BisTracker.RawInformation
                 { "Skill Speed", LuminaSheets.BaseParamSheet?.FirstOrDefault(x => x.Value.Name.ExtractText().ToLower() == "skill speed").Value.RowId ?? (uint)0 },
                 { "Tenacity", LuminaSheets.BaseParamSheet?.FirstOrDefault(x => x.Value.Name.ExtractText().ToLower() == "tenacity").Value.RowId ?? (uint)0 },
             };
+
+            DoHStatIds = new Dictionary<string, uint>()
+            {
+                { "Control", LuminaSheets.BaseParamSheet?.FirstOrDefault(x => x.Value.Name.ExtractText().ToLower() == "control").Value.RowId ?? (uint)0 },
+                { "Craftsmanship", LuminaSheets.BaseParamSheet?.FirstOrDefault(x => x.Value.Name.ExtractText().ToLower() == "craftsmanship").Value.RowId ?? (uint)0 },
+                { "CP", LuminaSheets.BaseParamSheet?.FirstOrDefault(x => x.Value.Name.ExtractText().ToLower() == "cp").Value.RowId ?? (uint)0 },
+            };
+
+            DoLStatIds = new Dictionary<string, uint>()
+            {
+                { "Gathering", LuminaSheets.BaseParamSheet?.FirstOrDefault(x => x.Value.Name.ExtractText().ToLower() == "gathering").Value.RowId ?? (uint)0 },
+                { "Perception", LuminaSheets.BaseParamSheet?.FirstOrDefault(x => x.Value.Name.ExtractText().ToLower() == "perception").Value.RowId ?? (uint)0 },
+                { "GP", LuminaSheets.BaseParamSheet?.FirstOrDefault(x => x.Value.Name.ExtractText().ToLower() == "gp").Value.RowId ?? (uint)0 },
+            };
         }
     }
 
@@ -76,6 +100,12 @@ namespace BisTracker.RawInformation
 
         [JsonProperty("hp")]
         public int Health { get; set; }
+        
+        [JsonProperty("cp")]
+        public int CP { get; set; }
+
+        [JsonProperty("gp")]
+        public int GP { get; set; }
 
         [JsonProperty("hpScalar")]
         public Dictionary<string, decimal> HealthScalar { get; set; }
