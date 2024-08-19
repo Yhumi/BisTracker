@@ -326,12 +326,12 @@ namespace BisTracker.BiS.Models
             var paramIndex = SetParameters.IndexOf(x => x.Param == param);
             if (paramIndex != -1)
             {
-                Svc.Log.Debug($"[{LuminaSheets.BaseParamSheet[param].Name}] Modifier: {(modifier / 100d)}");
-                Svc.Log.Debug($"[{LuminaSheets.BaseParamSheet[param].Name}] Old value: {SetParameters[paramIndex].Value}");
+                //Svc.Log.Debug($"[{LuminaSheets.BaseParamSheet[param].Name}] Modifier: {(modifier / 100d)}");
+                //Svc.Log.Debug($"[{LuminaSheets.BaseParamSheet[param].Name}] Old value: {SetParameters[paramIndex].Value}");
                 var statValue = SetParameters[paramIndex].Value;
                 var modifiedValue = statValue * (modifier / 100d);
                 SetParameters[paramIndex].Value = (short)Math.Floor((double)modifiedValue);
-                Svc.Log.Debug($"[{LuminaSheets.BaseParamSheet[param].Name}] Old value: {SetParameters[paramIndex].Value}");
+                //Svc.Log.Debug($"[{LuminaSheets.BaseParamSheet[param].Name}] Old value: {SetParameters[paramIndex].Value}");
             }
         }
     
@@ -460,14 +460,14 @@ namespace BisTracker.BiS.Models
             //    Svc.Log.Debug($"[{ItemName}][ItemSeries] Prop: {property.Name} | Val: {property.GetValue(itemLevel)}");
             //}
 
-            Svc.Log.Debug($"[{ItemName}] Materia Count: {Materia.Count}");
+            //Svc.Log.Debug($"[{ItemName}] Materia Count: {Materia.Count}");
 
             if (Materia != null)
             {
                 foreach (var materia in Materia)
                 {
                     if (materia.MateriaParameter == null) continue;
-                    Svc.Log.Debug($"[{ItemName}] Materia {LuminaSheets.BaseParamSheet[materia.MateriaParameter.Param].Name.ExtractText()}: {materia.MateriaParameter.Value}");
+                    //Svc.Log.Debug($"[{ItemName}] Materia {LuminaSheets.BaseParamSheet[materia.MateriaParameter.Param].Name.ExtractText()}: {materia.MateriaParameter.Value}");
 
                     int paramIndex = finalParameters.FindIndex(x => x.Param == materia.MateriaParameter.Param);
                     if (paramIndex > -1)
@@ -493,10 +493,10 @@ namespace BisTracker.BiS.Models
                 }
             }
 
-            foreach(var param in finalParameters)
-            {
-                Svc.Log.Debug($"[{ItemName}] [{LuminaSheets.BaseParamSheet[param.Param].Name} (Id {param.Param})] Base: {BaseParameters.FirstOrDefault(x => x.Param == param.Param)?.Value ?? 0} | Total: {param.Value}");
-            }
+            //foreach(var param in finalParameters)
+            //{
+            //    Svc.Log.Debug($"[{ItemName}] [{LuminaSheets.BaseParamSheet[param.Param].Name} (Id {param.Param})] Base: {BaseParameters.FirstOrDefault(x => x.Param == param.Param)?.Value ?? 0} | Total: {param.Value}");
+            //}
 
             return finalParameters;
         }
