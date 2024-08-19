@@ -68,9 +68,13 @@ namespace BisTracker.RawInformation
             if (item.BaseParamModifier >= baseParam.MeldParam.Length) return null;
             if (item.LevelItem.Value == null) return null;
 
+            Svc.Log.Debug($"[{item.Name}] Getting max value for {baseParam.Name}");
+
             PropertyInfo[] properties = typeof(ItemLevel).GetProperties();
-            var baseValProp = properties.Where(x => x.Name.ToLower() == baseParam.Name.ExtractText().ToLower()).FirstOrDefault();
+            var baseValProp = properties.Where(x => x.Name.ToLower() == baseParam.Name.ExtractText().Replace(" ", "").ToLower()).FirstOrDefault();
             if (baseValProp == null) return null;
+
+            Svc.Log.Debug($"[{item.Name}] BaseVal Prop: {baseValProp.Name}");
 
             var baseVal = baseValProp.GetValue(item.LevelItem.Value);
             if (baseVal == null) return null;

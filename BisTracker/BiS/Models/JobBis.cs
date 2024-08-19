@@ -184,6 +184,7 @@ namespace BisTracker.BiS.Models
             var levelData = ConstantData.LevelStats[100];
             var jobData = LuminaSheets.ClassJobSheet[Job.GetValueOrDefault()];
             string jobCategory = jobData.ClassJobCategory.Value.Name.ExtractText().ToLower();
+            Svc.Log.Debug(jobCategory);
 
             if (jobCategory.Contains("magic") || jobCategory.Contains("war"))
             {
@@ -459,11 +460,14 @@ namespace BisTracker.BiS.Models
             //    Svc.Log.Debug($"[{ItemName}][ItemSeries] Prop: {property.Name} | Val: {property.GetValue(itemLevel)}");
             //}
 
+            Svc.Log.Debug($"[{ItemName}] Materia Count: {Materia.Count}");
+
             if (Materia != null)
             {
                 foreach (var materia in Materia)
                 {
                     if (materia.MateriaParameter == null) continue;
+                    Svc.Log.Debug($"[{ItemName}] Materia {LuminaSheets.BaseParamSheet[materia.MateriaParameter.Param].Name.ExtractText()}: {materia.MateriaParameter.Value}");
 
                     int paramIndex = finalParameters.FindIndex(x => x.Param == materia.MateriaParameter.Param);
                     if (paramIndex > -1)
