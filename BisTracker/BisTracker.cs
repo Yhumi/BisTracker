@@ -17,6 +17,7 @@ using Dalamud.Game.Inventory;
 using System.Collections.Generic;
 using BisTracker.BiS;
 using System.Linq;
+using System;
 
 namespace BisTracker;
 
@@ -42,6 +43,7 @@ public unsafe class BisTracker : IDalamudPlugin
         P = this;
 
         LuminaSheets.Init();
+        ConstantData.Init();
         P.Config = Configuration.Load();
         TM = new();
         TM.TimeLimitMS = 1000;
@@ -51,13 +53,13 @@ public unsafe class BisTracker : IDalamudPlugin
             P.Config.UpdateConfig();
         }
 
+        CharacterInfo.SetCharaInventoryPointers();
+
         ws = new();
         ws.AddWindow(new MateriaMeldingUI());
         Icons = new(Svc.Data, Svc.Texture);
         Config = P.Config;
         PluginUi = new();
-
-        CharacterInfo.SetCharaInventoryPointers();
 
         Svc.Commands.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
@@ -71,6 +73,7 @@ public unsafe class BisTracker : IDalamudPlugin
         Svc.PluginInterface.UiBuilder.OpenMainUi += DrawConfigUI;
 
         Svc.ClientState.ClassJobChanged += OnCharacterJobChange;
+        Svc.ClientState.Login += OnClientLogin;
         Svc.GameInventory.InventoryChanged += OnInventoryChange;
 
         Style = StyleModel.GetFromCurrent()!;
@@ -88,6 +91,8 @@ public unsafe class BisTracker : IDalamudPlugin
         Svc.PluginInterface.UiBuilder.OpenMainUi -= DrawConfigUI;
 
         Svc.ClientState.ClassJobChanged -= OnCharacterJobChange;
+        Svc.ClientState.Login -= OnClientLogin;
+        Svc.GameInventory.InventoryChanged -= OnInventoryChange;
 
         ws?.RemoveAllWindows();
         ws = null!;
@@ -132,6 +137,14 @@ public unsafe class BisTracker : IDalamudPlugin
     private void OnCharacterJobChange(uint classJobId)
     {
         CharacterInfo.UpdateCharaStats(classJobId);
+    }
+
+    private void OnClientLogin()
+    {
+        CharacterInfo.SetCharaInventoryPointers();
+        CharacterInfo.UpdateCharaStats();
+        BiSUI.ResetInputs();
+        BiSUI.ResetBis();
     }
 
     private void OnInventoryChange(IReadOnlyCollection<InventoryEventArgs> events)

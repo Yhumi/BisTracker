@@ -50,7 +50,7 @@ namespace BisTracker.UI
             if (P.Config.SavedBis != null && P.Config.SavedBis.Any(x => x.Job == CharacterInfo.JobIDUint))
                 DrawOptions();
 
-            if (BisItems.Count > 0)
+            if (SavedJobBis != null)
             {
                 if (CharacterInfo.JobIDUint != BisItemsSavedJob) ResetBis();
                 else DrawMateriaHelper();
@@ -90,20 +90,22 @@ namespace BisTracker.UI
                     {
                         var selectedItemName = GetStringFromTextNode(selectedItemPointer->UldManager.NodeList[10]->GetAsAtkTextNode());
 
-                        BisItem? bisItem = BisItems.Where(x => 
+                        JobBis_Item? bisItem = SavedJobBis.BisItems.Where(x => 
                             x.ItemName != null && 
                             (x.ItemName.ToLower().StartsWith(selectedItemName.ToLower().TrimEnd('.')) ||
                             (P.Config.ShowAugmentedMeldsForUnaugmentedPieces && x.ItemName.ToLower().StartsWith($"Augmented {selectedItemName}".ToLower().TrimEnd('.'))))).FirstOrDefault();
+
+                        
                         if (bisItem != null)
                         {
                             DrawBisPieceWindow(componentNode, bisItem);
 
-                            if (bisItem.Materia.Count > 0 && P.Config.HighlightBisMateriaInMateriaMelder)
+                            if (IsEquippedTab(addonPtr->UldManager.NodeList[26]->GetAsAtkComponentDropdownList()) && bisItem.Materia.Count > 0 && P.Config.HighlightBisMateriaInMateriaMelder)
                             {
-                                var itemSlot = CharacterInfo.GetSlotIndexFromEquipSlotCategory(LuminaSheets.ItemSheet[bisItem.Id].EquipSlotCategory.Value);
-                                if (itemSlot == null) return;
+                                var item = CharacterInfo.GetEquippedItem(bisItem.Id);
+                                if (item == null) return;
 
-                                var melds = CharacterInfo.GetItemMateria(itemSlot.Value);
+                                var melds = item->Materia;
                                 var slottedMelds = melds.ToArray().Where(x => x != 0);
                                 if (slottedMelds.Count() == bisItem.Materia.Count) return; //The item is fully melded.
 
@@ -119,7 +121,7 @@ namespace BisTracker.UI
             }
         }
 
-        public unsafe static void DrawBisPieceWindow(AtkResNode* componentNode, BisItem bisItem)
+        public unsafe static void DrawBisPieceWindow(AtkResNode* componentNode, JobBis_Item bisItem)
         {
             var position = AtkResNodeFunctions.GetNodePosition(componentNode);
             var scale = AtkResNodeFunctions.GetNodeScale(componentNode);
@@ -153,7 +155,7 @@ namespace BisTracker.UI
             {
                 foreach (var bisItemMateria in bisItem.Materia)
                 {
-                    ImGui.Text(bisItemMateria.ItemName);
+                    ImGui.Text(bisItemMateria.GetMateriaLabel());
                 }
             }
             else { ImGui.Text("No melds.");  }
@@ -208,7 +210,7 @@ namespace BisTracker.UI
         {
             var checkBoxNode = materiaMeldingDropdown->UldManager.NodeList[1]->GetAsAtkComponentCheckBox();
             var selectedItem = checkBoxNode->UldManager.NodeList[2]->GetAsAtkTextNode();
-            return selectedItem->NodeText.ExtractText() == "Equipped";
+            return selectedItem->NodeText.ExtractText().Trim().ToLower() == "equipped";
         }
 
         public unsafe static string GetStringFromTextNode(AtkTextNode* textNode)
@@ -290,7 +292,7 @@ namespace BisTracker.UI
                                 SelectedJobBisName = bisSet.Name;
                                 BisItemsSavedJob = CharacterInfo.JobIDUint;
                                 SavedJobBis = bisSet;
-                                LoadBisIntoList();
+                                //LoadBisIntoList();
                             }
                         }
                     }

@@ -23,6 +23,13 @@ namespace BisTracker.BiS.Models
         [JsonProperty("materia")]
         public Dictionary<string, EtroApiMateria?> Materia { get; set; }
 
+        [JsonProperty("food")]
+        public int? Food { get; set; }
+
+        [JsonProperty("medicine")]
+        public int? Medicine { get; set; }
+
+
         [JsonProperty("weapon")]
         public int? Weapon { get; set; }
 
@@ -84,6 +91,8 @@ namespace BisTracker.BiS.Models
     {
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
+        public int? Food { get; set; } = null;
+        public int? Medicine { get; set; } = null;
 
         public bool Error = false;
 
@@ -100,6 +109,10 @@ namespace BisTracker.BiS.Models
         {
             Id = apiReponse.Id;
             Name = apiReponse.Name;
+
+            Food = apiReponse.Food;
+            Medicine = apiReponse.Medicine;
+
             SetItems = new();
 
             AddEtroItem(apiReponse.Weapon, CharacterEquippedGearSlotIndex.MainHand, apiReponse.Materia);
