@@ -69,8 +69,8 @@ public unsafe class BisTracker : IDalamudPlugin
         });
 
         Svc.PluginInterface.UiBuilder.Draw += ws.Draw;
-        Svc.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
-        Svc.PluginInterface.UiBuilder.OpenMainUi += DrawConfigUI;
+        Svc.PluginInterface.UiBuilder.OpenConfigUi += DrawSettingsUI;
+        Svc.PluginInterface.UiBuilder.OpenMainUi += DrawMainUI;
 
         Svc.ClientState.Login += OnClientLogin;
         Svc.ClientState.Logout += OnClientLogout;
@@ -79,7 +79,7 @@ public unsafe class BisTracker : IDalamudPlugin
 
         Style = StyleModel.GetFromCurrent()!;
 
-        PluginUi.OpenWindow = OpenWindow.Bis;
+        CharacterInfo.UpdateCharaStats();
     }
 
     public void Dispose()
@@ -87,9 +87,9 @@ public unsafe class BisTracker : IDalamudPlugin
         PluginUi.Dispose();
 
         Svc.Commands.RemoveHandler(CommandName);
-        Svc.PluginInterface.UiBuilder.OpenConfigUi -= DrawConfigUI;
+        Svc.PluginInterface.UiBuilder.OpenConfigUi -= DrawSettingsUI;
         Svc.PluginInterface.UiBuilder.Draw -= ws.Draw;
-        Svc.PluginInterface.UiBuilder.OpenMainUi -= DrawConfigUI;
+        Svc.PluginInterface.UiBuilder.OpenMainUi -= DrawMainUI;
 
         Svc.ClientState.Login -= OnClientLogin;
         Svc.ClientState.Logout -= OnClientLogout;
@@ -126,8 +126,17 @@ public unsafe class BisTracker : IDalamudPlugin
         };
     }
 
-    private void DrawConfigUI()
+    private void DrawMainUI()
     {
+        CharacterInfo.UpdateCharaStats();
+        PluginUi.OpenWindow = OpenWindow.Bis;
+        PluginUi.IsOpen = true;
+    }
+
+    private void DrawSettingsUI()
+    {
+        CharacterInfo.UpdateCharaStats();
+        PluginUi.OpenWindow = OpenWindow.Settings;
         PluginUi.IsOpen = true;
     }
 
