@@ -72,8 +72,9 @@ public unsafe class BisTracker : IDalamudPlugin
         Svc.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
         Svc.PluginInterface.UiBuilder.OpenMainUi += DrawConfigUI;
 
-        Svc.ClientState.ClassJobChanged += OnCharacterJobChange;
         Svc.ClientState.Login += OnClientLogin;
+        Svc.ClientState.Logout += OnClientLogout;
+        Svc.ClientState.ClassJobChanged += OnCharacterJobChange;
         Svc.GameInventory.InventoryChanged += OnInventoryChange;
 
         Style = StyleModel.GetFromCurrent()!;
@@ -90,8 +91,9 @@ public unsafe class BisTracker : IDalamudPlugin
         Svc.PluginInterface.UiBuilder.Draw -= ws.Draw;
         Svc.PluginInterface.UiBuilder.OpenMainUi -= DrawConfigUI;
 
-        Svc.ClientState.ClassJobChanged -= OnCharacterJobChange;
         Svc.ClientState.Login -= OnClientLogin;
+        Svc.ClientState.Logout -= OnClientLogout;
+        Svc.ClientState.ClassJobChanged -= OnCharacterJobChange;
         Svc.GameInventory.InventoryChanged -= OnInventoryChange;
 
         ws?.RemoveAllWindows();
@@ -145,6 +147,14 @@ public unsafe class BisTracker : IDalamudPlugin
         CharacterInfo.UpdateCharaStats();
         BiSUI.ResetInputs();
         BiSUI.ResetBis();
+    }
+
+    private void OnClientLogout()
+    {
+        BiSUI.ResetInputs();
+        BiSUI.ResetBis();
+        PluginUi.IsOpen = false;
+        PluginUi.OpenWindow = OpenWindow.None;
     }
 
     private void OnInventoryChange(IReadOnlyCollection<InventoryEventArgs> events)
