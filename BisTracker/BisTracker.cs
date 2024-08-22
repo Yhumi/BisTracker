@@ -18,6 +18,9 @@ using System.Collections.Generic;
 using BisTracker.BiS;
 using System.Linq;
 using System;
+using BisTracker.Melding;
+using static FFXIVClientStructs.FFXIV.Client.UI.Agent.AgentPartyMember.Delegates;
+using ECommons.Schedulers;
 
 namespace BisTracker;
 
@@ -45,8 +48,8 @@ public unsafe class BisTracker : IDalamudPlugin
         LuminaSheets.Init();
         ConstantData.Init();
         P.Config = Configuration.Load();
-        TM = new();
-        TM.TimeLimitMS = 1000;
+
+        TM = new() { AbortOnTimeout = true, TimeLimitMS = 20000 };
 
         if (P.Config.Version != CurrentConfigVersion)
         {
@@ -68,6 +71,8 @@ public unsafe class BisTracker : IDalamudPlugin
             ShowInHelp = true,
         });
 
+        AutoMeld.Init();
+
         Svc.PluginInterface.UiBuilder.Draw += ws.Draw;
         Svc.PluginInterface.UiBuilder.OpenConfigUi += DrawSettingsUI;
         Svc.PluginInterface.UiBuilder.OpenMainUi += DrawMainUI;
@@ -76,6 +81,8 @@ public unsafe class BisTracker : IDalamudPlugin
         Svc.ClientState.Logout += OnClientLogout;
         Svc.ClientState.ClassJobChanged += OnCharacterJobChange;
         Svc.GameInventory.InventoryChanged += OnInventoryChange;
+
+        Svc.Framework.Update += Tick;
 
         Style = StyleModel.GetFromCurrent()!;
 
@@ -95,6 +102,8 @@ public unsafe class BisTracker : IDalamudPlugin
         Svc.ClientState.Logout -= OnClientLogout;
         Svc.ClientState.ClassJobChanged -= OnCharacterJobChange;
         Svc.GameInventory.InventoryChanged -= OnInventoryChange;
+
+        Svc.Framework.Update -= Tick;
 
         ws?.RemoveAllWindows();
         ws = null!;
@@ -140,9 +149,9 @@ public unsafe class BisTracker : IDalamudPlugin
         PluginUi.IsOpen = true;
     }
 
-    private void OnFrameworkUpdate(IFramework framework)
+    private void Tick(object _)
     {
-        CharacterInfo.UpdateCharaStats();
+        AutoMeld.Tick();
     }
 
     private void OnCharacterJobChange(uint classJobId)

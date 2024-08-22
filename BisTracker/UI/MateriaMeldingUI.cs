@@ -1,5 +1,6 @@
 using BisTracker.BiS;
 using BisTracker.BiS.Models;
+using BisTracker.Melding;
 using BisTracker.RawInformation;
 using BisTracker.RawInformation.Character;
 using Dalamud.Interface.Windowing;
@@ -84,7 +85,10 @@ namespace BisTracker.UI
                     //    return;
 
                     var inventoryItemListComponentNode = addonPtr->UldManager.NodeList[17]->GetAsAtkComponentList();
-                    AtkComponentBase* selectedItemPointer = GetSelectedItem(inventoryItemListComponentNode);
+                    int selectedItemPointerIndex = GetSelectedItemIndex(inventoryItemListComponentNode);
+                    if (selectedItemPointerIndex < 0) return;
+
+                    AtkComponentBase* selectedItemPointer = inventoryItemListComponentNode->UldManager.NodeList[selectedItemPointerIndex]->GetAsAtkComponentNode()->GetComponent();
 
                     if (selectedItemPointer != null)
                     {
@@ -98,7 +102,7 @@ namespace BisTracker.UI
                         
                         if (bisItem != null)
                         {
-                            DrawBisPieceWindow(componentNode, bisItem);
+                            DrawBisPieceWindow(componentNode, bisItem, selectedItemPointer, selectedItemPointerIndex);
 
                             if (IsEquippedTab(addonPtr->UldManager.NodeList[26]->GetAsAtkComponentDropdownList()) && bisItem.Materia.Count > 0 && P.Config.HighlightBisMateriaInMateriaMelder)
                             {
@@ -121,7 +125,7 @@ namespace BisTracker.UI
             }
         }
 
-        public unsafe static void DrawBisPieceWindow(AtkResNode* componentNode, JobBis_Item bisItem)
+        public unsafe static void DrawBisPieceWindow(AtkResNode* componentNode, JobBis_Item bisItem, AtkComponentBase* selectedItemPointer, int selectedItemIndex)
         {
             var position = AtkResNodeFunctions.GetNodePosition(componentNode);
             var scale = AtkResNodeFunctions.GetNodeScale(componentNode);
@@ -157,6 +161,22 @@ namespace BisTracker.UI
                 {
                     ImGui.Text(bisItemMateria.GetMateriaLabel());
                 }
+
+                ImGui.Separator();
+                if (ImGui.Button("AutoMeld") && AutoMeld.Initialised)
+                {
+                    if (SavedJobBis == null) return;
+
+                    AutoMeld.CurrentWorkingPieceId = (uint) bisItem.Id;
+                    AutoMeld.CurrentWorkingPieceIndex = selectedItemIndex;
+
+                    AutoMeld.SelectedWorkingJob = SavedJobBis.Job ?? 0;
+                    AutoMeld.SelectedWorkingBis = SavedJobBis.Name ?? string.Empty;
+
+                    AutoMeld.ItemSelected = true;
+
+                    AutoMeld.StartAutomeld();
+                }
             }
             else { ImGui.Text("No melds.");  }
             
@@ -185,7 +205,7 @@ namespace BisTracker.UI
             }
         }
 
-        public unsafe static AtkComponentBase* GetSelectedItem(AtkComponentList* inventoryItemListComponentNode)
+        public unsafe static int GetSelectedItemIndex(AtkComponentList* inventoryItemListComponentNode)
         {
             try
             {
@@ -195,14 +215,14 @@ namespace BisTracker.UI
                     var listItem = inventoryItemListComponentNode->UldManager.NodeList[i]->GetAsAtkComponentNode();
                     if (listItem->GetComponent()->UldManager.NodeList[1]->IsVisible())
                     {
-                        return listItem->GetComponent();
+                        return i;
                     }
                 }
-                return null;
+                return -1;
             } 
             catch(Exception e)
             {
-                return null;
+                return -1;
             }
         }
 
