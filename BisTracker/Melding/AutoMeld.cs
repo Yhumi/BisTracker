@@ -78,9 +78,9 @@ namespace BisTracker.Melding
 
             if (AutoMelding && PerformingAction)
             {
-                if (!ItemSelected && EzThrottler.Check("AutoMeld.HandleSelectItem")) { PerformingAction = false; }
-                if (ItemSelected && !MateriaSelected && EzThrottler.Check("AutoMeld.HandleSelectMateria")) { PerformingAction = false; }
-                if (ItemSelected && MateriaSelected && EzThrottler.Check("AutoMeld.AffixingMateria")) { PerformingAction = false; }
+                if (!ItemSelected && EzThrottler.Check("AutoMeld.HandleSelectItem") && EzThrottler.Check("AutoMeld.AffixingMateria")) { PerformingAction = false; }
+                if (ItemSelected && !MateriaSelected && EzThrottler.Check("AutoMeld.HandleSelectMateria") && EzThrottler.Check("AutoMeld.AffixingMateria")) { PerformingAction = false; }
+                if (ItemSelected && MateriaSelected && (EzThrottler.Check("AutoMeld.PreMeldCooldown") && EzThrottler.Check("AutoMeld.AffixingMateria"))) { PerformingAction = false; }
             }
         }
 
@@ -160,6 +160,8 @@ namespace BisTracker.Melding
                                     Callback.Fire(materiaAttachAddon, true, 2, (materiaNode - 3), 1, 0);
                                     CurrentWorkingPieceIndex = reader.SelectedItemIndex;
 
+                                    EzThrottler.Throttle("AutoMeld.PreMeldCooldown", 2000);
+
                                     return true;
                                 }
                             }
@@ -175,6 +177,7 @@ namespace BisTracker.Melding
         private static bool HandleConfirmMateriaMeld()
         { 
             const string Throttler = "AutoMeld.AffixingMateria";
+            if (!EzThrottler.Check("AutoMeld.PreMeldCooldown")) return false;
             if (!EzThrottler.Throttle(Throttler, 7000))
             {
                 Throttled = true;
