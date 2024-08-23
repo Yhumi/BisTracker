@@ -14,15 +14,16 @@ namespace BisTracker.Readers
         public int ValidMateriaCount => ReadInt(288) ?? 0;
 
         public List<MateriaNames> MateriaNameList => Loop<MateriaNames>(429, 1, (int)ValidMateriaCount);
+        public List<ItemNames> ItemNameList => Loop<ItemNames>(147, 1, 11);
 
-        public unsafe class Item(nint Addon, int start) : AtkReader(Addon, start)
+        public unsafe class ItemNames(nint Addon, int start) : AtkReader(Addon, start)
         {
-
+            public string Name => ReadSeString(0).ExtractText();
         }
 
         public unsafe class MateriaNames(nint Addon, int start) : AtkReader(Addon, start)
         {
-            public string Name => ReadString(0);
+            public string Name => ReadSeString(0).ExtractText();
         }
     }
 }

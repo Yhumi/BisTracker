@@ -3,6 +3,8 @@ using BisTracker.BiS.Models;
 using BisTracker.Melding;
 using BisTracker.RawInformation;
 using BisTracker.RawInformation.Character;
+using BisTracker.Readers;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 using ECommons;
 using ECommons.DalamudServices;
@@ -164,6 +166,7 @@ namespace BisTracker.UI
             {
                 foreach (var bisItemMateria in bisItem.Materia)
                 {
+                    bisItemMateria.SetupParams();
                     ImGui.Text(bisItemMateria.GetMateriaLabel());
                 }
 
@@ -174,11 +177,11 @@ namespace BisTracker.UI
                     {
                         if (SavedJobBis == null) return;
 
-                        AutoMeld.CurrentWorkingPieceId = (uint)bisItem.Id;
-                        AutoMeld.CurrentWorkingPieceIndex = selectedItemIndex - 3;
-
                         AutoMeld.SelectedWorkingJob = SavedJobBis.Job ?? 0;
                         AutoMeld.SelectedWorkingBis = SavedJobBis.Name ?? string.Empty;
+
+                        AutoMeld.QueuedWorkingPieceIds.Enqueue((uint)bisItem.Id);
+                        AutoMeld.QueuedWorkingPieceIndexes.Enqueue(selectedItemIndex - 3);
 
                         AutoMeld.StartAutoUnmeld();
                     }
@@ -332,10 +335,22 @@ namespace BisTracker.UI
                                 }
                             }
                         }
+
+                        if (SelectedJobBisName != string.Empty)
+                        {
+                            if (ImGui.Button("Meld Full Set") && AutoMeld.Initialised)
+                            {
+                                EnqueueFullSet();
+                            }
+                        }
                     }
                     else
                     {
                         ImGui.Text($"Automeld in progress...");
+                        if (ImGui.Button("Cancel Automeld") && AutoMeld.Initialised)
+                        {
+                            AutoMeld.Abort();
+                        }
                     }
 
                     BisSelectorWindowSize = ImGui.GetWindowSize();
@@ -343,6 +358,34 @@ namespace BisTracker.UI
                     ImGui.End();
                     ImGui.PopStyleVar(2);
                 }
+            }
+        }
+
+        private static unsafe void EnqueueFullSet()
+        {
+            if(TryGetAddonByName<AtkUnitBase>("MateriaAttach", out var materiaAttachAddon))
+            {
+                AutoMeld.SelectedWorkingJob = SavedJobBis.Job ?? 0;
+                AutoMeld.SelectedWorkingBis = SavedJobBis.Name ?? string.Empty;
+
+                var reader = new ReaderMateriaAddon(materiaAttachAddon);
+
+                foreach(var name in reader.ItemNameList)
+                {
+                    Svc.Log.Debug($"{name.Name}");
+                }
+
+                foreach(var item in SavedJobBis?.BisItems?.Where(x => x.Id != 0) ?? [])
+                {
+                    var itemIndex = reader.ItemNameList.IndexOf(x => x.Name.ToLower() == item.ItemName.ToLower());
+                    if (itemIndex == -1) continue;
+
+                    Svc.Log.Debug($"Queueing item Id {item.Id}, Index: {reader.ItemNameList.IndexOf(x => x.Name.ToLower() == item.ItemName.ToLower())}");
+                    AutoMeld.QueuedWorkingPieceIds.Enqueue((uint)item.Id);
+                    AutoMeld.QueuedWorkingPieceIndexes.Enqueue(itemIndex);
+                }
+
+                AutoMeld.StartAutoUnmeld();
             }
         }
 

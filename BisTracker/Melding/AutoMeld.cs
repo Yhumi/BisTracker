@@ -21,8 +21,11 @@ namespace BisTracker.Melding
 {
     internal static unsafe class AutoMeld
     {
-        internal static int CurrentWorkingPieceIndex = 0;
+        internal static int CurrentWorkingPieceIndex = -1;
         internal static uint CurrentWorkingPieceId = 0;
+
+        internal static Queue<int> QueuedWorkingPieceIndexes = new Queue<int>();
+        internal static Queue<uint> QueuedWorkingPieceIds = new Queue<uint>();
 
         internal static uint SelectedWorkingJob = 0;
         internal static string SelectedWorkingBis = string.Empty;
@@ -42,6 +45,7 @@ namespace BisTracker.Melding
         internal static bool RetrieveDialogOpened = false;
         internal static bool RetrievingMateria = false;
 
+        internal static bool SwappingPiece = false;
         internal static bool Aborting = false;
 
         internal static bool Errors = false;
@@ -55,7 +59,7 @@ namespace BisTracker.Melding
 
         public static void Tick()
         {
-            if (Aborting) return;
+            if (Aborting || SwappingPiece) return;
 
             if (AutoUnmelding && !PerformingAction)
             {
@@ -110,7 +114,9 @@ namespace BisTracker.Melding
 
                 if (materiaAffixed.Count() >= bisMateriaCount)
                 {
-                    FinishAutomeld();
+                    SwappingPiece = true;
+                    SetupForNextPiece();
+                    CheckNextPiece();
                     return;
                 }
 
@@ -169,7 +175,7 @@ namespace BisTracker.Melding
                 } else { }
 
                 //There has been an error we need to stop for here.
-                FinishAutomeld();
+                SkipPiece();
                 return false;
             }
             else if (materiaAttachAddon != null && !IsAddonReady(materiaAttachAddon)) { return true; }
@@ -205,7 +211,7 @@ namespace BisTracker.Melding
 
                             if (materiaAffixed.Count() >= bisMateriaCount || materiaAffixed.Count() > 4)
                             {
-                                FinishAutomeld();
+                                SkipPiece();
                                 return false;
                             }
 
@@ -234,7 +240,7 @@ namespace BisTracker.Melding
                 }
 
                 //There has been an error we need to stop for here.
-                FinishAutomeld();
+                SkipPiece();
                 return false;
             }
             else if (materiaAttachAddon != null && !IsAddonReady(materiaAttachAddon)) { return true; }
@@ -314,7 +320,7 @@ namespace BisTracker.Melding
                 else { }
 
                 //There has been an error we need to stop for here.
-                Abort();
+                SkipPiece();
                 return false;
             }
             else if (materiaAttachAddon != null && !IsAddonReady(materiaAttachAddon)) { return true; }
@@ -387,15 +393,38 @@ namespace BisTracker.Melding
             return true;
         }
 
+        private static bool PassesStartupChecks()
+        {
+            if (SelectedWorkingJob == 0) return false;
+            if (SelectedWorkingBis == string.Empty) return false;
+            if (QueuedWorkingPieceIndexes.Count == 0) return false;
+            if (QueuedWorkingPieceIds.Count == 0) return false;
+            if (QueuedWorkingPieceIds.Count != QueuedWorkingPieceIndexes.Count) return false;
+            return true;
+        }
+
         public static void StartAutoUnmeld()
         {
-            if (CurrentWorkingPieceIndex == 0) return;
-            if (CurrentWorkingPieceId == 0) return;
-            if (SelectedWorkingJob == 0) return;
-            if (SelectedWorkingBis == string.Empty) return;
+            if (!PassesStartupChecks()) 
+            { 
+                Abort(); 
+                return; 
+            }
+
+            SetNextWorkingPiece();
 
             AutoUnmelding = true;
             P.MeldUI.SetAutomeld();
+        }
+
+        public static void CheckNextPiece()
+        {
+            if (QueuedWorkingPieceIds.Count == 0 || QueuedWorkingPieceIndexes.Count == 0)
+            {
+                FinishAutomeld();
+                return;
+            }
+            StartAutoUnmeld();
         }
 
         public static void FinishAutoUnmeld()
@@ -412,10 +441,7 @@ namespace BisTracker.Melding
 
         public static void StartAutomeld()
         {
-            if (CurrentWorkingPieceIndex == 0) return;
-            if (CurrentWorkingPieceId == 0) return;
-            if (SelectedWorkingJob == 0) return;
-            if (SelectedWorkingBis == string.Empty) return;
+            //if (!PassesStartupChecks()) return;
 
             AutoMelding = true;
             P.MeldUI.SetAutomeld();
@@ -425,7 +451,7 @@ namespace BisTracker.Melding
         {
             PerformingAction = false;
             Svc.Log.Debug($"Finished AutoMeld Operation.");
-            CurrentWorkingPieceIndex = 0;
+            CurrentWorkingPieceIndex = -1;
             CurrentWorkingPieceId = 0;
             SelectedWorkingJob = 0;
             SelectedWorkingBis = string.Empty;
@@ -435,8 +461,36 @@ namespace BisTracker.Melding
             MateriaSelected = false;
             AffixingMateria = false;
 
+            QueuedWorkingPieceIds.Clear();
+            QueuedWorkingPieceIndexes.Clear();
+
             AutoMelding = false;
             P.MeldUI.EndAutomeld();
+        }
+
+        public static void SkipPiece()
+        {
+            SwappingPiece = true;
+            Svc.Log.Debug("Skipping piece.");
+            SetupForNextPiece();
+            CheckNextPiece();
+        }
+
+        public static void SetupForNextPiece()
+        {
+            PerformingAction = false;
+
+            AutoMelding = false;
+            AutoUnmelding = false;
+
+            ItemSelected = false;
+            ItemRightClicked = false;
+
+            MateriaSelected = false;
+            RetrieveDialogOpened = false;
+
+            AffixingMateria = false;
+            RetrievingMateria = false;
         }
 
         public static void Abort()
@@ -450,10 +504,13 @@ namespace BisTracker.Melding
             RetrieveDialogOpened = false;
             RetrievingMateria = false;
 
-            CurrentWorkingPieceIndex = 0;
+            CurrentWorkingPieceIndex = -1;
             CurrentWorkingPieceId = 0;
             SelectedWorkingJob = 0;
             SelectedWorkingBis = string.Empty;
+
+            QueuedWorkingPieceIds.Clear();
+            QueuedWorkingPieceIndexes.Clear();
 
             ItemSelected = false;
             Throttled = false;
@@ -465,6 +522,15 @@ namespace BisTracker.Melding
             P.MeldUI.EndAutomeld();
 
             Aborting = false;
+        }
+    
+        public static void SetNextWorkingPiece()
+        {
+            CurrentWorkingPieceIndex = QueuedWorkingPieceIndexes.Dequeue();
+            CurrentWorkingPieceId = QueuedWorkingPieceIds.Dequeue();
+
+            SwappingPiece = false;
+            Svc.Log.Debug($"[AutoMeld] Running for piece: {CurrentWorkingPieceId}, {CurrentWorkingPieceIndex}");
         }
     }
 }

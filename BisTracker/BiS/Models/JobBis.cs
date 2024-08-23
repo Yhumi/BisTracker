@@ -513,7 +513,7 @@ namespace BisTracker.BiS.Models
         public JobBis_ItemMateria() { }
 
         public JobBis_ItemMateria(XivGearApp_Materia materia)
-        {
+        { 
             Id = materia.Id;
             SetupParams();
         }
