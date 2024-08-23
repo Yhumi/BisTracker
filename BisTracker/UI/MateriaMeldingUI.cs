@@ -175,21 +175,19 @@ namespace BisTracker.UI
                         if (SavedJobBis == null) return;
 
                         AutoMeld.CurrentWorkingPieceId = (uint)bisItem.Id;
-                        AutoMeld.CurrentWorkingPieceIndex = selectedItemIndex;
+                        AutoMeld.CurrentWorkingPieceIndex = selectedItemIndex - 3;
 
                         AutoMeld.SelectedWorkingJob = SavedJobBis.Job ?? 0;
                         AutoMeld.SelectedWorkingBis = SavedJobBis.Name ?? string.Empty;
 
-                        AutoMeld.ItemSelected = true;
-
-                        AutoMeld.StartAutomeld();
+                        AutoMeld.StartAutoUnmeld();
                     }
                 }
                 else { 
                     ImGui.Text("Automeld in progress...");
                     if (ImGui.Button("Cancel Automeld") && AutoMeld.Initialised)
                     {
-                        AutoMeld.FinishAutomeld();
+                        AutoMeld.Abort();
                     }
                 }
             }

@@ -52,6 +52,15 @@ namespace BisTracker.RawInformation
             return materia.Value ?? null;
         }
 
+        public static uint GetMateriaSheetIdFromMateriaItemId(int materiaItemId)
+        {
+            var materiaItem = ItemSheet[(uint)materiaItemId];
+            if (materiaItem == null) return 0;
+
+            var materia = MateriaSheet.Where(x => x.Value != null && x.Value.Item.Where(y => y.Value != null).Select(y => y.Value!.RowId).Contains((uint)materiaItemId)).FirstOrDefault();
+            return materia.Key;
+        }
+
         public static Item? GetItemFromItemFoodRowId(int itemFoodId)
         {
             var item = ItemSheet.Where(x => x.Value.ItemAction.Value.Data[1] == itemFoodId).FirstOrDefault().Value;
