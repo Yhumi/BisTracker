@@ -8,6 +8,7 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 using ECommons;
 using ECommons.DalamudServices;
+using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using System;
@@ -25,6 +26,7 @@ namespace BisTracker.UI
         private static string SelectedJobBisSearch = string.Empty;
 
         public static bool IsAutoMelding = false;
+        public static string AutomeldText = string.Empty;
 
         private static JobBis? SavedJobBis = null;
 
@@ -47,10 +49,12 @@ namespace BisTracker.UI
             };
         }
 
-        public override void Draw()
+        public override unsafe void Draw()
         {
             if (!P.Config.ShowMateriaMeldingWindows) return;
             if (Svc.Condition[Dalamud.Game.ClientState.Conditions.ConditionFlag.BetweenAreas]) return;
+
+            if (!TryGetAddonByName<AtkUnitBase>("MateriaAttach", out var matAttach)) return;
 
             if (P.Config.SavedBis != null && P.Config.SavedBis.Any(x => x.Job == CharacterInfo.JobIDUint))
                 DrawOptions();
@@ -65,6 +69,8 @@ namespace BisTracker.UI
 
         public void SetAutomeld() { IsAutoMelding = true; }
         public void EndAutomeld() { IsAutoMelding = false; }
+
+        public void UpdateAutomeldStatus(string status) { AutomeldText = status; }
 
         public unsafe static void DrawMateriaHelper()
         {
@@ -144,12 +150,12 @@ namespace BisTracker.UI
 
             if ((AtkResNodeFunctions.ResetPosition && position.X != 0) || P.Config.LockMiniMenuR)
             {
-                ImGuiHelpers.SetNextWindowPosRelativeMainViewport(new Vector2(position.X + size.X + 7, position.Y + BisSelectorWindowSize.Y + 14), ImGuiCond.Always);
+                ImGuiHelpers.SetNextWindowPosRelativeMainViewport(new Vector2(position.X + size.X + 7, position.Y), ImGuiCond.Always);
                 AtkResNodeFunctions.ResetPosition = false;
             }
             else
             {
-                ImGuiHelpers.SetNextWindowPosRelativeMainViewport(new Vector2(position.X + size.X + 7, position.Y + BisSelectorWindowSize.Y + 14), ImGuiCond.FirstUseEver);
+                ImGuiHelpers.SetNextWindowPosRelativeMainViewport(new Vector2(position.X + size.X + 7, position.Y), ImGuiCond.FirstUseEver);
             }
 
             ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(7f, 7f));
@@ -183,16 +189,17 @@ namespace BisTracker.UI
                         AutoMeld.QueuedWorkingPieceIds.Enqueue((uint)bisItem.Id);
                         AutoMeld.QueuedWorkingPieceIndexes.Enqueue(selectedItemIndex - 3);
 
+                        AutoMeld.Total = 1;
+
                         AutoMeld.StartAutoUnmeld();
                     }
                 }
-                else { 
-                    ImGui.Text("Automeld in progress...");
-                    if (ImGui.Button("Cancel Automeld") && AutoMeld.Initialised)
-                    {
-                        AutoMeld.Abort();
-                    }
-                }
+                //else { 
+                //    if (ImGui.Button("Cancel Automeld") && AutoMeld.Initialised)
+                //    {
+                //        AutoMeld.Abort();
+                //    }
+                //}
             }
             else { ImGui.Text("No melds.");  }
             
@@ -289,18 +296,18 @@ namespace BisTracker.UI
 
                         if ((AtkResNodeFunctions.ResetPosition && position.X != 0) || P.Config.LockMiniMenuR)
                         {
-                            ImGuiHelpers.SetNextWindowPosRelativeMainViewport(new Vector2(position.X + size.X + 7, position.Y + 7), ImGuiCond.Always);
+                            ImGuiHelpers.SetNextWindowPosRelativeMainViewport(new Vector2(position.X, position.Y - BisSelectorWindowSize.Y), ImGuiCond.Always);
                             AtkResNodeFunctions.ResetPosition = false;
                         }
                         else
                         {
-                            ImGuiHelpers.SetNextWindowPosRelativeMainViewport(new Vector2(position.X + size.X + 7, position.Y + 7), ImGuiCond.FirstUseEver);
+                            ImGuiHelpers.SetNextWindowPosRelativeMainViewport(new Vector2(position.X, position.Y + 7), ImGuiCond.FirstUseEver);
                         }
                     }
 
                     ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Vector2(7f, 7f));
                     ImGui.PushStyleVar(ImGuiStyleVar.WindowMinSize, new Vector2(0f, 0f));
-                    var flags = ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.AlwaysUseWindowPadding;
+                    var flags = ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.AlwaysUseWindowPadding | ImGuiWindowFlags.NoDecoration;
                     if (P.Config.PinMiniMenu)
                         flags |= ImGuiWindowFlags.NoMove;
 
@@ -310,6 +317,7 @@ namespace BisTracker.UI
                     if (!IsAutoMelding)
                     {
                         ImGui.Text($"{CharacterInfo.JobID} BiS:");
+                        ImGui.SameLine();
                         if (ImGui.BeginCombo("###BisSelection", SelectedJobBisName))
                         {
                             ImGui.Text("Search");
@@ -334,19 +342,31 @@ namespace BisTracker.UI
                                     //LoadBisIntoList();
                                 }
                             }
-                        }
 
-                        if (SelectedJobBisName != string.Empty)
+                            ImGui.EndCombo();
+                        }
+                        //ImGui.EndCombo();
+
+                        ImGui.SameLine();
+                        if (ImGuiEx.ButtonCond("Meld Full Set", () => SelectedJobBisName != string.Empty && IsEquippedTab(addonPtr->UldManager.NodeList[26]->GetAsAtkComponentDropdownList())) && AutoMeld.Initialised)
                         {
-                            if (ImGui.Button("Meld Full Set") && AutoMeld.Initialised)
-                            {
-                                EnqueueFullSet();
-                            }
+                            EnqueueFullSet();
                         }
                     }
                     else
                     {
                         ImGui.Text($"Automeld in progress...");
+
+                        ImGui.SameLine();
+                        ImGui.Separator(); 
+
+                        ImGui.SameLine();
+                        ImGui.Text(AutomeldText);
+
+                        ImGui.SameLine();
+                        ImGui.Separator();
+
+                        ImGui.SameLine();
                         if (ImGui.Button("Cancel Automeld") && AutoMeld.Initialised)
                         {
                             AutoMeld.Abort();
@@ -385,6 +405,7 @@ namespace BisTracker.UI
                     AutoMeld.QueuedWorkingPieceIndexes.Enqueue(itemIndex);
                 }
 
+                AutoMeld.Total = AutoMeld.QueuedWorkingPieceIndexes.Count;
                 AutoMeld.StartAutoUnmeld();
             }
         }

@@ -24,6 +24,9 @@ namespace BisTracker.Melding
         internal static int CurrentWorkingPieceIndex = -1;
         internal static uint CurrentWorkingPieceId = 0;
 
+        internal static int Completed = 0;
+        internal static int Total = 0;
+
         internal static Queue<int> QueuedWorkingPieceIndexes = new Queue<int>();
         internal static Queue<uint> QueuedWorkingPieceIds = new Queue<uint>();
 
@@ -57,6 +60,8 @@ namespace BisTracker.Melding
             Initialised = true;
         }
 
+        //This shit is such a mess. Clean this up girl.
+        //Though it does work well enough.
         public static void Tick()
         {
             if (Aborting || SwappingPiece) return;
@@ -149,10 +154,11 @@ namespace BisTracker.Melding
 
         private static bool HandleSelectItem()
         {
+            UpdateStatusText($"Melding");
             const string Throttler = "AutoMeld.HandleSelectItem";
             if (!EzThrottler.Throttle("AutoUnMeld.RetrievingMateria")) { Svc.Log.Debug("Still unmelding..."); Throttled = true; return false; };
             if (!EzThrottler.Throttle("AutoMeld.AffixingMateria")) { Svc.Log.Debug("Still melding..."); Throttled = true; return false; };
-            if (!EzThrottler.Throttle(Throttler, 750))
+            if (!EzThrottler.Throttle(Throttler, P.Config.GenericThrottleTime))
             {
                 Throttled = true;
                 return false;
@@ -186,7 +192,7 @@ namespace BisTracker.Melding
         private static bool HandleSelectMateriaToAffix()
         {
             const string Throttler = "AutoMeld.HandleSelectMateria";
-            if (!EzThrottler.Throttle(Throttler, 750))
+            if (!EzThrottler.Throttle(Throttler, P.Config.GenericThrottleTime))
             {
                 Throttled = true;
                 return false;
@@ -230,7 +236,7 @@ namespace BisTracker.Melding
                                     Callback.Fire(materiaAttachAddon, true, 2, (materiaNode - 3), 1, 0);
                                     //CurrentWorkingPieceIndex = reader.SelectedItemIndex;
 
-                                    EzThrottler.Throttle("AutoMeld.PreMeldCooldown", 750);
+                                    EzThrottler.Throttle("AutoMeld.PreMeldCooldown", P.Config.PauseTimeBetweenSteps);
 
                                     return true;
                                 }
@@ -249,10 +255,10 @@ namespace BisTracker.Melding
         }
 
         private static bool HandleConfirmMateriaMeld()
-        { 
+        {
             const string Throttler = "AutoMeld.AffixingMateria";
             if (!EzThrottler.Check("AutoMeld.PreMeldCooldown")) return false;
-            if (!EzThrottler.Throttle(Throttler, 4500))
+            if (!EzThrottler.Throttle(Throttler, P.Config.AnimationPauseTime))
             {
                 Throttled = true;
                 return false;
@@ -295,8 +301,9 @@ namespace BisTracker.Melding
     
         private static bool HandleRightClickItem()
         {
+            UpdateStatusText($"Unmelding");
             const string Throttler = "AutoUnMeld.RightClickItem";
-            if (!EzThrottler.Throttle(Throttler, 750))
+            if (!EzThrottler.Throttle(Throttler, P.Config.GenericThrottleTime))
             {
                 Throttled = true;
                 return false;
@@ -331,7 +338,7 @@ namespace BisTracker.Melding
         private static bool HandleContextMenuInteraction()
         {
             const string Throttler = "AutoMeld.OpenRetrieveDialog";
-            if (!EzThrottler.Throttle(Throttler, 750))
+            if (!EzThrottler.Throttle(Throttler, P.Config.GenericThrottleTime))
             {
                 Throttled = true;
                 return false;
@@ -342,7 +349,7 @@ namespace BisTracker.Melding
             if (TryGetAddonByName<AtkUnitBase>("ContextMenu", out var contextMenu) && IsAddonReady(contextMenu))
             {
                 Callback.Fire(contextMenu, true, 0, 1, 0);
-                EzThrottler.Throttle("AutoUnMeld.PreRetrieveCooldown");
+                EzThrottler.Throttle("AutoUnMeld.PreRetrieveCooldown", P.Config.PauseTimeBetweenSteps);
                 RetrieveDialogOpened = true;
             }
             else if (contextMenu != null && !IsAddonReady(contextMenu)) { return true; }
@@ -354,7 +361,7 @@ namespace BisTracker.Melding
         {
             const string Throttler = "AutoUnMeld.RetrievingMateria";
             if (!EzThrottler.Check("AutoUnMeld.PreRetrieveCooldown")) return false;
-            if (!EzThrottler.Throttle(Throttler, 4500))
+            if (!EzThrottler.Throttle(Throttler, P.Config.AnimationPauseTime))
             {
                 Throttled = true;
                 return false;
@@ -464,6 +471,9 @@ namespace BisTracker.Melding
             QueuedWorkingPieceIds.Clear();
             QueuedWorkingPieceIndexes.Clear();
 
+            Completed = 0;
+            Total = 0;
+
             AutoMelding = false;
             P.MeldUI.EndAutomeld();
         }
@@ -491,6 +501,8 @@ namespace BisTracker.Melding
 
             AffixingMateria = false;
             RetrievingMateria = false;
+
+            Completed += 1;
         }
 
         public static void Abort()
@@ -519,6 +531,9 @@ namespace BisTracker.Melding
 
             AutoUnmelding = false;
             AutoMelding = false;
+
+            Completed = 0;
+            Total = 0;
             P.MeldUI.EndAutomeld();
 
             Aborting = false;
@@ -531,6 +546,15 @@ namespace BisTracker.Melding
 
             SwappingPiece = false;
             Svc.Log.Debug($"[AutoMeld] Running for piece: {CurrentWorkingPieceId}, {CurrentWorkingPieceIndex}");
+        }
+    
+        public static unsafe void UpdateStatusText(string status)
+        {
+            if (TryGetAddonByName<AtkUnitBase>("MateriaAttach", out var materiaAttach))
+            {
+                var reader = new ReaderMateriaAddon(materiaAttach);
+                P.MeldUI.UpdateAutomeldStatus($"{status} ({Completed + 1}/{Total})");
+            }
         }
     }
 }

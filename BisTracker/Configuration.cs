@@ -24,6 +24,10 @@ public class Configuration : IPluginConfiguration
     public bool ShowAugmentedMeldsForUnaugmentedPieces = true;
     public bool UseMateriaNameInsteadOfMateriaValue = false;
 
+    public int GenericThrottleTime = 750;
+    public int PauseTimeBetweenSteps = 750;
+    public int AnimationPauseTime = 4500;
+
     [NonSerialized]
     public int AccessoryCost = 375;
     [NonSerialized]
