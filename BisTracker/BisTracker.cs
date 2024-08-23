@@ -37,6 +37,8 @@ public unsafe class BisTracker : IDalamudPlugin
     internal TaskManager TM;
     internal TextureCache Icons;
 
+    internal MateriaMeldingUI MeldUI;
+
     internal StyleModel Style;
     internal bool StylePushed = false;
 
@@ -59,7 +61,8 @@ public unsafe class BisTracker : IDalamudPlugin
         CharacterInfo.SetCharaInventoryPointers();
 
         ws = new();
-        ws.AddWindow(new MateriaMeldingUI());
+        MeldUI = new MateriaMeldingUI();
+        ws.AddWindow(MeldUI);
         Icons = new(Svc.Data, Svc.Texture);
         Config = P.Config;
         PluginUi = new();

@@ -17,10 +17,12 @@ using System.Threading.Tasks;
 
 namespace BisTracker.UI
 {
-    internal class MateriaMeldingUI : Window
+    public class MateriaMeldingUI : Window
     {
         private static string SelectedJobBisName = string.Empty;
         private static string SelectedJobBisSearch = string.Empty;
+
+        public static bool IsAutoMelding = false;
 
         private static JobBis? SavedJobBis = null;
 
@@ -58,6 +60,9 @@ namespace BisTracker.UI
             }
                 
         }
+
+        public void SetAutomeld() { IsAutoMelding = true; }
+        public void EndAutomeld() { IsAutoMelding = false; }
 
         public unsafe static void DrawMateriaHelper()
         {
@@ -163,19 +168,29 @@ namespace BisTracker.UI
                 }
 
                 ImGui.Separator();
-                if (ImGui.Button("AutoMeld") && AutoMeld.Initialised)
+                if (!IsAutoMelding)
                 {
-                    if (SavedJobBis == null) return;
+                    if (ImGui.Button("AutoMeld") && AutoMeld.Initialised)
+                    {
+                        if (SavedJobBis == null) return;
 
-                    AutoMeld.CurrentWorkingPieceId = (uint) bisItem.Id;
-                    AutoMeld.CurrentWorkingPieceIndex = selectedItemIndex;
+                        AutoMeld.CurrentWorkingPieceId = (uint)bisItem.Id;
+                        AutoMeld.CurrentWorkingPieceIndex = selectedItemIndex;
 
-                    AutoMeld.SelectedWorkingJob = SavedJobBis.Job ?? 0;
-                    AutoMeld.SelectedWorkingBis = SavedJobBis.Name ?? string.Empty;
+                        AutoMeld.SelectedWorkingJob = SavedJobBis.Job ?? 0;
+                        AutoMeld.SelectedWorkingBis = SavedJobBis.Name ?? string.Empty;
 
-                    AutoMeld.ItemSelected = true;
+                        AutoMeld.ItemSelected = true;
 
-                    AutoMeld.StartAutomeld();
+                        AutoMeld.StartAutomeld();
+                    }
+                }
+                else { 
+                    ImGui.Text("Automeld in progress...");
+                    if (ImGui.Button("Cancel Automeld") && AutoMeld.Initialised)
+                    {
+                        AutoMeld.FinishAutomeld();
+                    }
                 }
             }
             else { ImGui.Text("No melds.");  }
@@ -288,33 +303,41 @@ namespace BisTracker.UI
                     if (P.Config.PinMiniMenu)
                         flags |= ImGuiWindowFlags.NoMove;
 
+
                     ImGui.Begin($"###Options{node->NodeId}", flags);
 
-                    ImGui.Text($"{CharacterInfo.JobID} BiS:");
-                    if (ImGui.BeginCombo("###BisSelection", SelectedJobBisName))
+                    if (!IsAutoMelding)
                     {
-                        ImGui.Text("Search");
-                        ImGui.SameLine();
-                        ImGui.InputText("###BisXivGearAppSetSearch", ref SelectedJobBisSearch, 100);
-
-                        if (ImGui.Selectable("", SelectedJobBisName == string.Empty))
+                        ImGui.Text($"{CharacterInfo.JobID} BiS:");
+                        if (ImGui.BeginCombo("###BisSelection", SelectedJobBisName))
                         {
-                            ResetBis();
-                        }
+                            ImGui.Text("Search");
+                            ImGui.SameLine();
+                            ImGui.InputText("###BisXivGearAppSetSearch", ref SelectedJobBisSearch, 100);
 
-                        foreach (var bisSet in P.Config.SavedBis.Where(x => x.Job == CharacterInfo.JobIDUint))
-                        {
-                            bool selected = ImGui.Selectable($"{bisSet.Name}", bisSet.Name == SelectedJobBisName);
-                            
-                            if (selected)
+                            if (ImGui.Selectable("", SelectedJobBisName == string.Empty))
                             {
                                 ResetBis();
-                                SelectedJobBisName = bisSet.Name;
-                                BisItemsSavedJob = CharacterInfo.JobIDUint;
-                                SavedJobBis = bisSet;
-                                //LoadBisIntoList();
+                            }
+
+                            foreach (var bisSet in P.Config.SavedBis.Where(x => x.Job == CharacterInfo.JobIDUint))
+                            {
+                                bool selected = ImGui.Selectable($"{bisSet.Name}", bisSet.Name == SelectedJobBisName);
+
+                                if (selected)
+                                {
+                                    ResetBis();
+                                    SelectedJobBisName = bisSet.Name;
+                                    BisItemsSavedJob = CharacterInfo.JobIDUint;
+                                    SavedJobBis = bisSet;
+                                    //LoadBisIntoList();
+                                }
                             }
                         }
+                    }
+                    else
+                    {
+                        ImGui.Text($"Automeld in progress...");
                     }
 
                     BisSelectorWindowSize = ImGui.GetWindowSize();

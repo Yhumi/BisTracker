@@ -160,7 +160,7 @@ namespace BisTracker.Melding
                                     Callback.Fire(materiaAttachAddon, true, 2, (materiaNode - 3), 1, 0);
                                     CurrentWorkingPieceIndex = reader.SelectedItemIndex;
 
-                                    EzThrottler.Throttle("AutoMeld.PreMeldCooldown", 2000);
+                                    EzThrottler.Throttle("AutoMeld.PreMeldCooldown");
 
                                     return true;
                                 }
@@ -178,7 +178,7 @@ namespace BisTracker.Melding
         { 
             const string Throttler = "AutoMeld.AffixingMateria";
             if (!EzThrottler.Check("AutoMeld.PreMeldCooldown")) return false;
-            if (!EzThrottler.Throttle(Throttler, 7000))
+            if (!EzThrottler.Throttle(Throttler, 4500))
             {
                 Throttled = true;
                 return false;
@@ -227,6 +227,7 @@ namespace BisTracker.Melding
             if (SelectedWorkingBis == string.Empty) return;
 
             AutoMelding = true;
+            P.MeldUI.SetAutomeld();
         }
 
         public static void FinishAutomeld()
@@ -243,6 +244,7 @@ namespace BisTracker.Melding
             AffixingMateria = false;
 
             AutoMelding = false;
+            P.MeldUI.EndAutomeld();
         }
     }
 }
