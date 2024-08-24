@@ -9,6 +9,7 @@ using ECommons.DalamudServices;
 using ECommons.Throttlers;
 using ECommons.UIHelpers.AddonMasterImplementations;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets;
 using System;
@@ -36,6 +37,8 @@ namespace BisTracker.Melding
 
         internal static bool AutoUnmelding = false;
         internal static bool AutoMelding = false;
+
+        internal static bool YesNo = false;
 
         internal static bool PerformingAction = false;
         internal static bool Throttled = false;
@@ -227,6 +230,13 @@ namespace BisTracker.Melding
                                 return false;
                             }
 
+                            var luminaItem = LuminaSheets.ItemSheet[CurrentWorkingPieceId];
+                            if (!P.Config.AllowOvermelding && materiaAffixed.Count() >= luminaItem.MateriaSlotCount)
+                            {
+                                SkipPiece();
+                                return false;
+                            }
+
                             var nextMateria = bis.BisItems?.FirstOrDefault(x => x.Id == (int)CurrentWorkingPieceId)?.Materia?[materiaAffixed.Count()] ?? null;
                             if (nextMateria != null && nextMateria.Id != 0)
                             {
@@ -262,6 +272,21 @@ namespace BisTracker.Melding
 
         private static bool HandleConfirmMateriaMeld()
         {
+            if (YesNo && TryGetAddonByName<AddonSelectYesno>("SelectYesno", out var yesNo))
+            {
+                Svc.Log.Debug($"YesNo Handling");
+                var yesNoManager = new SelectYesno(yesNo);
+                if (yesNo->YesButton != null && yesNo->YesButton->IsEnabled)
+                {
+                    yesNoManager.Yes();
+                    AffixingMateria = true;
+                    YesNo = false;
+                    return true;
+                }
+                else { return false; }
+            }
+            else if (YesNo) { Svc.Log.Debug($"YesNo Handling - YesNo not found"); return false; }
+
             const string Throttler = "AutoMeld.AffixingMateria";
             if (!EzThrottler.Check("AutoMeld.PreMeldCooldown")) return false;
             if (!EzThrottler.Throttle(Throttler, P.Config.AnimationPauseTime))
@@ -271,15 +296,37 @@ namespace BisTracker.Melding
             }
 
             PerformingAction = true;
-            
+
+            var equippedItem = CharacterInfo.GetEquippedItem((int)CurrentWorkingPieceId);
+            var materiaAffixed = equippedItem->Materia.ToArray().Where(x => x != 0);
+            var luminaItem = LuminaSheets.ItemSheet[CurrentWorkingPieceId];
+            if (!P.Config.AllowOvermelding && materiaAffixed.Count() >= luminaItem.MateriaSlotCount)
+            {
+                SkipPiece();
+                return false;
+            }
+
             if (TryGetAddonByName<AtkUnitBase>("MateriaAttachDialog", out var materiaAttachDialogAddon) && IsAddonReady(materiaAttachDialogAddon))
             {
                 Svc.Log.Debug($"Affxing materia.");
                 var materiaAttachDialog = new AddonMaster.MateriaAttachDialog(materiaAttachDialogAddon);
                 if (materiaAttachDialog.IsVisible && materiaAttachDialog.MeldButton->IsEnabled)
                 {
+                    if (materiaAffixed.Count() >= luminaItem.MateriaSlotCount)
+                    {
+                        var bulkOvermeld = materiaAttachDialogAddon->UldManager.NodeList[5]->GetAsAtkComponentCheckBox();
+                        bulkOvermeld->SetChecked(true);
+                    }
+
                     materiaAttachDialog.MeldButton->ClickAddonButton(materiaAttachDialogAddon);
-                    AffixingMateria = true;
+
+                    if (materiaAffixed.Count() >= luminaItem.MateriaSlotCount)
+                    {
+                        YesNo = true;
+                        return false;
+                    }
+
+                    AffixingMateria = true; 
                 }
 
                 return true;
@@ -458,6 +505,7 @@ namespace BisTracker.Melding
 
             ItemSelected = false;
             AutoUnmelding = false;
+            YesNo = false;
             StartAutomeld();
         }
 
@@ -489,6 +537,8 @@ namespace BisTracker.Melding
             Completed = 0;
             Total = 0;
 
+            YesNo = false;
+
             AutoMelding = false;
             P.MeldUI.EndAutomeld();
         }
@@ -517,6 +567,7 @@ namespace BisTracker.Melding
             AffixingMateria = false;
             RetrievingMateria = false;
 
+            YesNo = false;
             Completed += 1;
         }
 
@@ -547,6 +598,8 @@ namespace BisTracker.Melding
             AutoUnmelding = false;
             AutoMelding = false;
 
+            YesNo = false;
+
             Completed = 0;
             Total = 0;
             P.MeldUI.EndAutomeld();
@@ -573,3 +626,4 @@ namespace BisTracker.Melding
         }
     }
 }
+

@@ -29,6 +29,8 @@ public class Configuration : IPluginConfiguration
     public int PreUnmeldCooldown = 50;
     public int AnimationPauseTime = 4500;
 
+    public bool AllowOvermelding = false;
+
     [NonSerialized]
     public int AccessoryCost = 375;
     [NonSerialized]

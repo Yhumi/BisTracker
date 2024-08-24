@@ -27,6 +27,8 @@ namespace BisTracker.UI
             int PreUnmeldCooldown = P.Config.PreUnmeldCooldown;
             int AnimationPauseTime = P.Config.AnimationPauseTime;
 
+            bool AllowOvermelding = P.Config.AllowOvermelding;
+
             int GenericThrottleTimeDefault = 250;
             int PreMeldCooldownDefault = 500;
             int PreUnmeldCooldownDefault = 50;
@@ -124,6 +126,13 @@ namespace BisTracker.UI
                     P.Config.AnimationPauseTime = AnimationPauseTime;
                     P.Config.Save();
                 }
+ 
+                if (ImGui.Checkbox("Allow Overmelding", ref AllowOvermelding))
+                {
+                    P.Config.AllowOvermelding = AllowOvermelding;
+                    P.Config.Save();
+                }
+                ImGuiComponents.HelpMarker("Allow the automelder to overmeld pieces. This may nuke your materia count.");
             }
         }
     } 
