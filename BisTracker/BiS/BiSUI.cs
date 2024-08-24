@@ -17,6 +17,11 @@ using OtterGui;
 using Dalamud.Interface.Textures.TextureWraps;
 using ECommons;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using ECommons.Automation;
+using BisTracker.Melding;
+using static FFXIVClientStructs.FFXIV.Client.UI.Misc.RaptureGearsetModule.Delegates;
+using System.Xml.Linq;
 
 namespace BisTracker.BiS
 {
@@ -29,6 +34,8 @@ namespace BisTracker.BiS
         internal static string StoredBisSearch = string.Empty;
 
         internal static string SetNameToSave = string.Empty;
+
+        internal static JobBis? TempBis = null;
 
         private static string Search = string.Empty;
         private static string BisLink = string.Empty;
@@ -68,17 +75,42 @@ namespace BisTracker.BiS
             DrawBisUI();
         }
 
-        private static async void DrawBisUI()
+        private static unsafe async void DrawBisUI()
         {
-            if (ImGui.Button($"Current job: {CharacterInfo.JobID}"))
+            if (ImGui.Button($"Select Current job ({CharacterInfo.JobID})"))
             {
                 ResetBis();
                 ResetInputs();
                 SelectedJob = CharacterInfo.JobIDUint;
                 LoadBisFromConfig();
             }
+            ImGui.SameLine();
+            if (ImGuiEx.ButtonCond("Equip Items", () => IsBisSelected() && EquipGear.Status == EquipGear.EquipGearStatus.Idle))
+            {
+                var jobBis = GetJobBis();
+                if (jobBis == null) return;
 
-            if(ImGui.CollapsingHeader("BiS Selection", ImGuiTreeNodeFlags.Selected))
+                EquipGear.Tasks.Add((() => EquipGear.EquipGearset((Job)SelectedJob), TimeSpan.FromMilliseconds(200)));
+                foreach (var item in jobBis.BisItems)
+                {
+                    EquipGear.Tasks.Add((() => EquipGear.EquipGearPiece(item.Id), TimeSpan.FromMilliseconds(200)));
+                }
+            }
+
+            if (UIState.Instance()->IsUnlockLinkUnlocked(12))
+            {
+                ImGui.SameLine();
+                if (ImGuiEx.ButtonCond("Open Materia Melder", () => IsBisSelected() && SelectedJob == CharacterInfo.JobIDUint))
+                {
+                    if (IsBisSelected())
+                        PopulateMeldBis();
+
+                    P.TM.Enqueue(() => MeldingAddonUtils.OpenMateriaMelder());
+                    P.TM.Enqueue(() => MeldingAddonUtils.SelectEquippedItemsDropdown());
+                }
+            }  
+
+            if (ImGui.CollapsingHeader("BiS Selection", ImGuiTreeNodeFlags.Selected))
             {
                 ImGui.TextWrapped("Job");
                 SelectedJobPreview = SelectedJob != 0 ? JobNameCleanup(LuminaSheets.ClassJobSheet[SelectedJob]) : string.Empty;
@@ -176,7 +208,6 @@ namespace BisTracker.BiS
                         if (BisLinkUri == null || !ValidHosts.Contains(BisLinkUri.Host)) { ImGui.TextWrapped($"Invalid URI."); return; }
 
                         FetchBisFromHost();
-
                     }
 
                     ImGui.Separator();
@@ -386,23 +417,14 @@ namespace BisTracker.BiS
 
         private static void DrawXivGearAppItems()
         {
-            if (XivGearAppChosenBis == null) { return; }
-
-            
-            JobBis jobBis = new JobBis();
-            jobBis.CreateBisItemsFromXivGearAppSetItems(XivGearAppChosenBis, XivGearAppChosenFood);
-
-            DrawBisItems(jobBis);
+            if (TempBis == null) { return; }
+            DrawBisItems(TempBis);
         }
 
         private static void DrawEtroItems()
         {
-            if (EtroResponse == null) { return; }
-
-            JobBis jobBis = new JobBis();
-            jobBis.PopulateBisItemsFromEtro(EtroResponse);
-
-            DrawBisItems(jobBis);
+            if (TempBis == null) { return; }
+            DrawBisItems(TempBis);
         }
 
         private static void DrawBisItems(JobBis jobBis)
@@ -648,8 +670,8 @@ namespace BisTracker.BiS
 
             if (XivGearAppResponse!.Items != null)
             {
-                JobBis jobBis = new JobBis();
-                jobBis.CreateBisItemsFromXivGearAppSetItems(XivGearAppResponse.Items, XivGearAppResponse.Food);
+                var jobBis = GetJobBis();
+                TempBis = jobBis;
 
                 CheckForItemsEquipped(jobBis);
                 CheckForItemsInArmouryChest(jobBis);
@@ -663,6 +685,7 @@ namespace BisTracker.BiS
             if (EtroResponse == null) EtroResponse = new(true);
 
             Svc.Log.Debug($"Etro Reponse (Error? {EtroResponse?.Error.ToString() ?? "NULL"}): {EtroResponse?.Name ?? "NULL"}");
+            TempBis = GetJobBis();
 
             EtroItemCheck();
         }
@@ -699,23 +722,18 @@ namespace BisTracker.BiS
 
         private static void EtroItemCheck()
         {
-            if (EtroResponse == null) return;
-            JobBis jobBis = new JobBis();
-            jobBis.PopulateBisItemsFromEtro(EtroResponse);
+            if (TempBis == null) return;
 
-            CheckForItemsEquipped(jobBis);
-            CheckForItemsInArmouryChest(jobBis);
+            CheckForItemsEquipped(TempBis);
+            CheckForItemsInArmouryChest(TempBis);
         }
 
         private static void XIVGearAppItemCheck()
         {
-            if (XivGearAppChosenBis == null) return;
+            if (TempBis == null) return;
 
-            JobBis jobBis = new JobBis();
-            jobBis.CreateBisItemsFromXivGearAppSetItems(XivGearAppChosenBis, XivGearAppChosenFood);
-
-            CheckForItemsEquipped(jobBis);
-            CheckForItemsInArmouryChest(jobBis);
+            CheckForItemsEquipped(TempBis);
+            CheckForItemsInArmouryChest(TempBis);
         }
 
         private static unsafe void CheckForItemsEquipped(JobBis bis)
@@ -766,8 +784,7 @@ namespace BisTracker.BiS
         {
             JobBis jobBis = new JobBis()
             {
-                Job = SelectedJob,
-                Name = SetNameToSave
+                Job = SelectedJob
             };
 
             switch(SheetType)
@@ -783,6 +800,8 @@ namespace BisTracker.BiS
                 default:
                     return;
             }
+
+            jobBis.Name = SetNameToSave;
 
             P.Config.SaveJobBis(jobBis);
         }
@@ -818,6 +837,65 @@ namespace BisTracker.BiS
 
             Svc.NotificationManager.AddNotification(new Dalamud.Interface.ImGuiNotification.Notification() { Content = $"Deleted set for {JobNameCleanup(LuminaSheets.ClassJobSheet[SelectedJob])} with name {setName}", Type = Dalamud.Interface.ImGuiNotification.NotificationType.Success });
             P.Config.Save();
+        }
+
+        private static bool IsBisSelected()
+        {
+            return EtroResponse != null || XivGearAppChosenBis != null || SavedBis != null;
+        }     
+
+        private static void PopulateMeldBis()
+        {
+            switch (SheetType)
+            {
+                case BisSheetType.Saved:
+                    if (SavedBis == null) return;
+                    P.MeldUI.SetBis(SavedBis);
+                    break;
+
+                case BisSheetType.Etro:
+                    if (EtroResponse == null) return;
+                    var etroBis = new JobBis();
+                    etroBis.PopulateBisItemsFromEtro(EtroResponse);
+                    P.MeldUI.SetBis(etroBis);
+                    break;
+
+                case BisSheetType.XIVGearApp:
+                    if (XivGearAppResponse == null) return;
+                    var xivAppBis = new JobBis();
+                    xivAppBis.PopulateBisItemsFromXIVGearApp(XivGearAppResponse, SelectedXivGearAppSet);
+                    P.MeldUI.SetBis(xivAppBis);
+                    break;
+
+                case BisSheetType.None:
+                default:
+                    break;
+            }
+        }
+
+        private static JobBis? GetJobBis()
+        {
+            switch (SheetType)
+            {
+                case BisSheetType.Saved:
+                    return SavedBis;
+
+                case BisSheetType.Etro:
+                    if (EtroResponse == null) return null;
+                    var etroBis = new JobBis();
+                    etroBis.PopulateBisItemsFromEtro(EtroResponse);
+                    return etroBis;
+
+                case BisSheetType.XIVGearApp:
+                    if (XivGearAppResponse == null) return null;
+                    var xivAppBis = new JobBis();
+                    xivAppBis.PopulateBisItemsFromXIVGearApp(XivGearAppResponse, SelectedXivGearAppSet);
+                    return xivAppBis;
+
+                case BisSheetType.None:
+                default:
+                    return null;
+            }
         }
     }
 }

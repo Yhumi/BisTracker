@@ -24,6 +24,13 @@ public class Configuration : IPluginConfiguration
     public bool ShowAugmentedMeldsForUnaugmentedPieces = true;
     public bool UseMateriaNameInsteadOfMateriaValue = false;
 
+    public int GenericThrottleTime = 250;
+    public int PreMeldCooldown = 500;
+    public int PreUnmeldCooldown = 50;
+    public int AnimationPauseTime = 4500;
+
+    public bool AllowOvermelding = false;
+
     [NonSerialized]
     public int AccessoryCost = 375;
     [NonSerialized]

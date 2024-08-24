@@ -12,6 +12,7 @@ using System.Runtime.InteropServices.Marshalling;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using static FFXIVClientStructs.FFXIV.Client.System.String.Utf8String.Delegates;
 using static Lumina.Data.Parsing.Layer.LayerCommon;
 
@@ -56,10 +57,12 @@ namespace BisTracker.BiS.Models
         {
             if (xivGearAppResponse == null) return;
             Food = xivGearAppResponse.Food;
+            
 
             if (xivGearAppResponse.Sets != null)
             {
                 if (selectedSetName == null) return;
+                Name = selectedSetName;
                 var selectedSet = GetSetFromSelectedSetName(xivGearAppResponse.Sets, selectedSetName);
                 if (selectedSet == null) return;
 
@@ -69,6 +72,7 @@ namespace BisTracker.BiS.Models
 
             if (xivGearAppResponse.Items != null)
             {
+                Name = xivGearAppResponse.Name;
                 CreateBisItemsFromXivGearAppSetItems(xivGearAppResponse.Items, xivGearAppResponse.Food);
                 return;
             }
@@ -109,6 +113,8 @@ namespace BisTracker.BiS.Models
             if (etroResponse == null) return;
             if (BisItems == null) BisItems = new List<JobBis_Item>();
             if (etroResponse.SetItems == null) return;
+            Job = (uint?)etroResponse.Job;
+            Name = etroResponse.Name;
 
             foreach (var item in etroResponse.SetItems)
             {
@@ -383,11 +389,20 @@ namespace BisTracker.BiS.Models
 
             if (item != null && item.Materia != null)
             {
-                Materia.Add(new(item.Materia.MateriaSlot1));
-                Materia.Add(new(item.Materia.MateriaSlot2));
-                Materia.Add(new(item.Materia.MateriaSlot3));
-                Materia.Add(new(item.Materia.MateriaSlot4));
-                Materia.Add(new(item.Materia.MateriaSlot5));
+                if (item.Materia.MateriaSlot1 != 0)
+                    Materia.Add(new(item.Materia.MateriaSlot1));
+
+                if (item.Materia.MateriaSlot2 != 0)
+                    Materia.Add(new(item.Materia.MateriaSlot2));
+
+                if (item.Materia.MateriaSlot3 != 0)
+                    Materia.Add(new(item.Materia.MateriaSlot3));
+
+                if (item.Materia.MateriaSlot4 != 0)
+                    Materia.Add(new(item.Materia.MateriaSlot4));
+
+                if (item.Materia.MateriaSlot5 != 0)
+                    Materia.Add(new(item.Materia.MateriaSlot5));
             }
 
             if (Id != 0)
@@ -513,7 +528,7 @@ namespace BisTracker.BiS.Models
         public JobBis_ItemMateria() { }
 
         public JobBis_ItemMateria(XivGearApp_Materia materia)
-        {
+        { 
             Id = materia.Id;
             SetupParams();
         }
