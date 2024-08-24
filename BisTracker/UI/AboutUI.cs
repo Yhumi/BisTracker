@@ -5,6 +5,7 @@ using ImGuiNET;
 using OtterGui;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,8 +23,15 @@ namespace BisTracker.UI
 
             ImGuiEx.LineCentered("###Links", () =>
             {
-                //if (ImGui.Button("Discord")) { Util.OpenLink(""); }
-                //ImGui.SameLine();
+                if (ImGui.Button("Discord")) 
+                {
+                    Process.Start(new ProcessStartInfo()
+                    {
+                        FileName = "https://discord.gg/vWkz4yG9X7",
+                        UseShellExecute = true
+                    });
+                }
+                ImGui.SameLine();
                 if (ImGui.Button("Repository")) 
                 {
                     ImGui.SetClipboardText("https://raw.githubusercontent.com/Yhumi/Plogons/master/plugins.json");
