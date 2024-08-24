@@ -204,7 +204,7 @@ namespace BisTracker.Melding
                 return TaskResult.Retry;
             }
 
-            DuoLog.Information($"{item.Name} not found in inventory. Skipping.");
+            Svc.Log.Debug($"{item.Name} not found in inventory. Skipping.");
             return TaskResult.Skip;
         }
         
