@@ -272,6 +272,7 @@ namespace BisTracker.Melding
 
         private static bool HandleConfirmMateriaMeld()
         {
+            const string Throttler = "AutoMeld.AffixingMateria";
             if (YesNo && TryGetAddonByName<AddonSelectYesno>("SelectYesno", out var yesNo))
             {
                 Svc.Log.Debug($"YesNo Handling");
@@ -281,13 +282,13 @@ namespace BisTracker.Melding
                     yesNoManager.Yes();
                     AffixingMateria = true;
                     YesNo = false;
+                    EzThrottler.Throttle(Throttler, P.Config.AnimationPauseTime, true);
                     return true;
+                    
                 }
                 else { return false; }
             }
-            else if (YesNo) { Svc.Log.Debug($"YesNo Handling - YesNo not found"); return false; }
-
-            const string Throttler = "AutoMeld.AffixingMateria";
+            else if (YesNo) { Svc.Log.Debug($"YesNo Handling - YesNo not found"); return false; }   
             if (!EzThrottler.Check("AutoMeld.PreMeldCooldown")) return false;
             if (!EzThrottler.Throttle(Throttler, P.Config.AnimationPauseTime))
             {
