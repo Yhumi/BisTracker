@@ -23,11 +23,13 @@ namespace BisTracker.UI
             bool UseMateriaNameInsteadOfMateriaValue = P.Config.UseMateriaNameInsteadOfMateriaValue;
 
             int GenericThrottleTime = P.Config.GenericThrottleTime;
-            int PauseTimeBetweenSteps = P.Config.PauseTimeBetweenSteps;
+            int PreMeldCooldown = P.Config.PreMeldCooldown;
+            int PreUnmeldCooldown = P.Config.PreUnmeldCooldown;
             int AnimationPauseTime = P.Config.AnimationPauseTime;
 
-            int GenericThrottleTimeDefault = 750;
-            int PauseTimeBetweenStepsDefault = 750;
+            int GenericThrottleTimeDefault = 250;
+            int PreMeldCooldownDefault = 500;
+            int PreUnmeldCooldownDefault = 50;
             int AnimationPauseTimeDefault = 4500;
 
             ImGui.Separator();
@@ -78,8 +80,11 @@ namespace BisTracker.UI
                     GenericThrottleTime = GenericThrottleTimeDefault;
                     P.Config.GenericThrottleTime = GenericThrottleTime;
 
-                    PauseTimeBetweenSteps = PauseTimeBetweenStepsDefault;
-                    P.Config.PauseTimeBetweenSteps = PauseTimeBetweenSteps;
+                    PreMeldCooldown = PreMeldCooldownDefault;
+                    P.Config.PreMeldCooldown = PreMeldCooldown;
+
+                    PreUnmeldCooldown = PreUnmeldCooldownDefault;
+                    P.Config.PreUnmeldCooldown = PreUnmeldCooldown;
 
                     AnimationPauseTime = AnimationPauseTimeDefault;
                     P.Config.AnimationPauseTime = AnimationPauseTime;
@@ -97,10 +102,18 @@ namespace BisTracker.UI
                 }
 
                 ImGui.Text("Pause Time Before Melding");
-                ImGuiComponents.HelpMarker("The pause time between certain steps such as affixing materia. This is pretty likely to cause issues if you set it too low.");
-                if (ImGui.DragInt("###PauseTimeBetweenSteps", ref PauseTimeBetweenSteps))
+                ImGuiComponents.HelpMarker("The pause time before affixing materia. This is pretty likely to cause issues if you set it too low.");
+                if (ImGui.DragInt("###PauseTimeBetweenSteps", ref PreMeldCooldown))
                 {
-                    P.Config.PauseTimeBetweenSteps = PauseTimeBetweenSteps;
+                    P.Config.PreMeldCooldown = PreMeldCooldown;
+                    P.Config.Save();
+                }
+
+                ImGui.Text("Pause Time Before Unmelding");
+                ImGuiComponents.HelpMarker("The pause time before removing materia. For some reason this doesnt cause issues when low? Make it make sense.");
+                if (ImGui.DragInt("###PauseTimeBeforeUnmeldStep", ref PreUnmeldCooldown))
+                {
+                    P.Config.PreUnmeldCooldown = PreUnmeldCooldown;
                     P.Config.Save();
                 }
 

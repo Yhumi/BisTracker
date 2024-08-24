@@ -56,7 +56,7 @@ namespace BisTracker.UI
 
             if (!TryGetAddonByName<AtkUnitBase>("MateriaAttach", out var matAttach)) return;
 
-            if (P.Config.SavedBis != null && P.Config.SavedBis.Any(x => x.Job == CharacterInfo.JobIDUint))
+            //if (P.Config.SavedBis != null && P.Config.SavedBis.Any(x => x.Job == CharacterInfo.JobIDUint))
                 DrawOptions();
 
             if (SavedJobBis != null)
@@ -427,6 +427,13 @@ namespace BisTracker.UI
             }
 
             Svc.Log.Debug($"Added {BisItems.Count} items to in-memory bis sheet.");
+        }
+
+        public void SetBis(JobBis bisSet)
+        {
+            SelectedJobBisName = bisSet.Name;
+            BisItemsSavedJob = CharacterInfo.JobIDUint;
+            SavedJobBis = bisSet;
         }
 
         public override void PreDraw()

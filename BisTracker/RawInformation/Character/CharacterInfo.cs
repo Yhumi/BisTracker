@@ -164,6 +164,32 @@ namespace BisTracker.RawInformation.Character
             return FindInventoryItem((int)unaugmentedItem.RowId);
         }
 
+        public static unsafe int GetInventoryItemSlot(InventoryContainer* inv, int itemId)
+        {
+            uint invSize = inv->Size;
+            for (int i = 0; i < invSize; i++)
+            {
+                if (inv->GetInventorySlot(i)->ItemId == itemId)
+                    return i;
+            }
+
+            return -1;
+        }
+
+        public static unsafe InventoryType GetArmouryChestInventoryTypeFromGearSlotIndex(CharacterEquippedGearSlotIndex gearSlot)
+        {
+            switch (gearSlot)
+            {
+                case CharacterEquippedGearSlotIndex.MainHand:
+                    return InventoryType.ArmoryMainHand;
+                case CharacterEquippedGearSlotIndex.LeftRing:
+                case CharacterEquippedGearSlotIndex.RightRing:
+                    return InventoryType.ArmoryRings;
+                default:
+                    return (InventoryType)((int)gearSlot + 3199);
+            }
+        }
+
         public static CharacterEquippedGearSlotIndex? GetSlotIndexFromEquipSlotCategory(EquipSlotCategory? category)
         {
             if (category == null) return null;
@@ -184,6 +210,23 @@ namespace BisTracker.RawInformation.Character
             return null;
         }
 
+        public static unsafe (InventoryType inventory, int pos)? GetInventoryItemPositon(int itemId)
+        {
+            var inv1Item = GetInventoryItemSlot(InventoryManager.Instance()->GetInventoryContainer(InventoryType.Inventory1), itemId);
+            if (inv1Item > -1) return (InventoryType.Inventory1, inv1Item);
+
+            var inv2Item = GetInventoryItemSlot(InventoryManager.Instance()->GetInventoryContainer(InventoryType.Inventory2), itemId);
+            if (inv2Item > -1) return (InventoryType.Inventory2, inv2Item);
+
+            var inv3Item = GetInventoryItemSlot(InventoryManager.Instance()->GetInventoryContainer(InventoryType.Inventory3), itemId);
+            if (inv3Item > -1) return (InventoryType.Inventory3, inv3Item);
+
+            var inv4Item = GetInventoryItemSlot(InventoryManager.Instance()->GetInventoryContainer(InventoryType.Inventory4), itemId);
+            if (inv4Item > -1) return (InventoryType.Inventory4, inv4Item);
+
+            return null;
+        }
+        
         public static byte? CharacterLevel;
         public static Job JobID;
         public static uint JobIDUint;

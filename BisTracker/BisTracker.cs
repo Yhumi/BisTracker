@@ -108,6 +108,8 @@ public unsafe class BisTracker : IDalamudPlugin
 
         Svc.Framework.Update -= Tick;
 
+        EquipGear.Dispose();
+
         ws?.RemoveAllWindows();
         ws = null!;
 
@@ -155,6 +157,7 @@ public unsafe class BisTracker : IDalamudPlugin
     private void Tick(object _)
     {
         AutoMeld.Tick();
+        EquipGear.Update();
     }
 
     private void OnCharacterJobChange(uint classJobId)

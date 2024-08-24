@@ -1,5 +1,6 @@
 using BisTracker.RawInformation.Character;
 using ECommons.DalamudServices;
+using ECommons.ExcelServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -28,6 +29,9 @@ namespace BisTracker.BiS.Models
 
         [JsonProperty("medicine")]
         public int? Medicine { get; set; }
+
+        [JsonProperty("job")]
+        public int? Job { get; set; }
 
 
         [JsonProperty("weapon")]
@@ -93,6 +97,7 @@ namespace BisTracker.BiS.Models
         public string Name { get; set; } = string.Empty;
         public int? Food { get; set; } = null;
         public int? Medicine { get; set; } = null;
+        public int? Job { get; set; } = null; 
 
         public bool Error = false;
 
@@ -112,6 +117,8 @@ namespace BisTracker.BiS.Models
 
             Food = apiReponse.Food;
             Medicine = apiReponse.Medicine;
+
+            Job = apiReponse.Job;
 
             SetItems = new();
 
@@ -134,7 +141,10 @@ namespace BisTracker.BiS.Models
         private void AddEtroItem(int? itemId, CharacterEquippedGearSlotIndex gearSlot, Dictionary<string, EtroApiMateria?> materia)
         {
             EtroItem item = new EtroItem(itemId, gearSlot);
-            item.BuildMateriaFromEtroApiResponse(materia);
+            if (materia != null)
+                item.BuildMateriaFromEtroApiResponse(materia);
+            else
+                item.Materia = new();
 
             if (SetItems == null) { SetItems = new(); }
             SetItems.Add(item);
@@ -157,6 +167,8 @@ namespace BisTracker.BiS.Models
 
         public void BuildMateriaFromEtroApiResponse(Dictionary<string, EtroApiMateria?> materia)
         {
+            if (materia == null) return;
+                
             switch (GearSlot)
             {
                 case CharacterEquippedGearSlotIndex.RightRing:

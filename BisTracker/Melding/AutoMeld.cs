@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static ECommons.UIHelpers.AddonMasterImplementations.AddonMaster;
 
 namespace BisTracker.Melding
 {
@@ -172,15 +173,17 @@ namespace BisTracker.Melding
                 var itemList = materiaAttachAddon->GetNodeById(13)->GetAsAtkComponentList();
                 if (itemList != null && itemList->ListLength >= CurrentWorkingPieceIndex)
                 {
+                    if (itemList->UldManager.LoadedState != AtkLoadState.Loaded || !materiaAttachAddon->GetNodeById(13)->IsVisible())
+                        return true;
+
                     ItemSelected = true;
                     Callback.Fire(materiaAttachAddon, true, 1, CurrentWorkingPieceIndex, 1, 0);
                     Svc.Log.Debug($"Selecting Item Index {CurrentWorkingPieceIndex}");
 
                     //EzThrottler.Throttle("AutoMeld.PreMateriaCooldown", 1250);
                     return true;
-                } else { }
+                }
 
-                //There has been an error we need to stop for here.
                 SkipPiece();
                 return false;
             }
@@ -206,6 +209,9 @@ namespace BisTracker.Melding
                 var materiaList = materiaAttachAddon->GetNodeById(23)->GetAsAtkComponentNode();
                 if (materiaList != null)
                 {
+                    if (!materiaAttachAddon->GetNodeById(23)->IsVisible() || materiaList->GetComponent()->UldManager.LoadedState != AtkLoadState.Loaded)
+                        return true;
+
                     var bis = P.Config.SavedBis?.Where(x => x.Job == SelectedWorkingJob && x.Name == SelectedWorkingBis).FirstOrDefault() ?? null;
                     if (bis != null)
                     {
@@ -236,7 +242,7 @@ namespace BisTracker.Melding
                                     Callback.Fire(materiaAttachAddon, true, 2, (materiaNode - 3), 1, 0);
                                     //CurrentWorkingPieceIndex = reader.SelectedItemIndex;
 
-                                    EzThrottler.Throttle("AutoMeld.PreMeldCooldown", P.Config.PauseTimeBetweenSteps);
+                                    EzThrottler.Throttle("AutoMeld.PreMeldCooldown", P.Config.PreMeldCooldown);
 
                                     return true;
                                 }
@@ -270,9 +276,13 @@ namespace BisTracker.Melding
             {
                 Svc.Log.Debug($"Affxing materia.");
                 var materiaAttachDialog = new AddonMaster.MateriaAttachDialog(materiaAttachDialogAddon);
-                materiaAttachDialog.MeldButton->ClickAddonButton(materiaAttachDialogAddon);
-                AffixingMateria = true;
+                if (materiaAttachDialog.IsVisible && materiaAttachDialog.MeldButton->IsEnabled)
+                {
+                    materiaAttachDialog.MeldButton->ClickAddonButton(materiaAttachDialogAddon);
+                    AffixingMateria = true;
+                }
 
+                return true;
             }
             else if (materiaAttachDialogAddon != null && !IsAddonReady(materiaAttachDialogAddon)) { return true; }
 
@@ -318,13 +328,14 @@ namespace BisTracker.Melding
                 var itemList = materiaAttachAddon->GetNodeById(13)->GetAsAtkComponentList();
                 if (itemList != null && itemList->ListLength >= CurrentWorkingPieceIndex)
                 {
-                    ItemSelected = true;
+                    if (!materiaAttachAddon->GetNodeById(13)->IsVisible() || itemList->UldManager.LoadedState != AtkLoadState.Loaded)
+                        return true;
+
                     Callback.Fire(materiaAttachAddon, true, 4, CurrentWorkingPieceIndex, 0, 0);
                     Svc.Log.Debug($"Right Clicking Item Index {CurrentWorkingPieceIndex}");
                     ItemRightClicked = true;
                     return true;
                 }
-                else { }
 
                 //There has been an error we need to stop for here.
                 SkipPiece();
@@ -349,7 +360,7 @@ namespace BisTracker.Melding
             if (TryGetAddonByName<AtkUnitBase>("ContextMenu", out var contextMenu) && IsAddonReady(contextMenu))
             {
                 Callback.Fire(contextMenu, true, 0, 1, 0);
-                EzThrottler.Throttle("AutoUnMeld.PreRetrieveCooldown", P.Config.PauseTimeBetweenSteps);
+                EzThrottler.Throttle("AutoUnMeld.PreRetrieveCooldown", P.Config.PreUnmeldCooldown);
                 RetrieveDialogOpened = true;
             }
             else if (contextMenu != null && !IsAddonReady(contextMenu)) { return true; }
@@ -373,9 +384,13 @@ namespace BisTracker.Melding
             {
                 Svc.Log.Debug($"Affxing materia.");
                 var materiaRetrieveDialog = new AddonMaster.MateriaRetrieveDialog(materiaRetrieveDialogAddon);
-                materiaRetrieveDialog.BeginButton->ClickAddonButton(materiaRetrieveDialogAddon);
-                RetrievingMateria = true;
+                if (materiaRetrieveDialog.IsVisible && materiaRetrieveDialog.BeginButton->IsEnabled)
+                {
+                    materiaRetrieveDialog.BeginButton->ClickAddonButton(materiaRetrieveDialogAddon);
+                    RetrievingMateria = true;
+                }
 
+                return true;
             }
             else if (materiaRetrieveDialogAddon != null && !IsAddonReady(materiaRetrieveDialogAddon)) { return true; }
 
