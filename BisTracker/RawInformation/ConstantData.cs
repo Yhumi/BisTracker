@@ -20,6 +20,11 @@ namespace BisTracker.RawInformation
         public static Dictionary<string, uint>? DoHStatIds;
         public static Dictionary<string, uint>? DoLStatIds;
 
+        public static int AccessoryCost = 375;
+        public static int LeftSmallCost = 495;
+        public static int LeftBigCost = 825;
+        public static int WeeklyTomeCap = 450;
+
         public static List<string> TwoHandedJobs = new List<string>()
         {
             "GLA", "CNJ", "THM", 

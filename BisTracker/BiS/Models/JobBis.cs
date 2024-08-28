@@ -515,6 +515,12 @@ namespace BisTracker.BiS.Models
 
             return finalParameters;
         }
+    
+        public int? GetTomeCost()
+        {
+            var itemShop = LuminaSheets.SpecialShopSheet?.Where(x => x.Value.)
+        }
+    
     }
 
     public class JobBis_ItemMateria
