@@ -75,7 +75,7 @@ namespace BisTracker.BiS
 
             //Get everything after last /
             int pos = etroUri.AbsoluteUri.LastIndexOf("/") + 1;
-            if (pos < 0) { return null; }
+            if (pos == 0) { return null; }
             
             return etroUri.AbsoluteUri.Substring(pos, etroUri.AbsoluteUri.Length - pos);
         }
