@@ -394,15 +394,19 @@ namespace BisTracker.BiS
 
                     if (selected)
                     {
+                        Svc.Log.Debug($"Selected Set: {set.Name}");
+                        TempBis = null;
                         SelectedXivGearAppSet = set.Name;
                         XivGearAppChosenBis = set.Items;
                         XivGearAppChosenFood = set.Food;
 
-                        JobBis jobBis = new JobBis();
-                        jobBis.CreateBisItemsFromXivGearAppSetItems(set.Items, set.Food);
+                        var bis = GetJobBis();
+                        if (bis == null) return;
 
-                        CheckForItemsEquipped(jobBis);
-                        CheckForItemsInArmouryChest(jobBis);
+                        TempBis = bis;
+
+                        CheckForItemsEquipped(bis);
+                        CheckForItemsInArmouryChest(bis);
                     }
                 }
 
@@ -517,20 +521,17 @@ namespace BisTracker.BiS
         {
             if (XivGearAppChosenBis == null) { return; }
 
-            JobBis jobBis = new JobBis();
-            jobBis.CreateBisItemsFromXivGearAppSetItems(XivGearAppChosenBis, XivGearAppChosenFood);
+            //var bis = GetJobBis();
+            //if (bis == null) return;
 
-            DrawBisConsumables(jobBis);
+            DrawBisConsumables(TempBis);
         }
 
         private static void DrawEtroBisConsumables()
         {
             if (EtroResponse == null) { return; }
 
-            JobBis jobBis = new JobBis();
-            jobBis.PopulateBisItemsFromEtro(EtroResponse);
-
-            DrawBisConsumables(jobBis);
+            DrawBisConsumables(TempBis);
         }
 
         public static void DrawBisConsumables(JobBis bis)
@@ -601,8 +602,9 @@ namespace BisTracker.BiS
 
         private static List<JobBis_Parameter>? GetXivGearAppSetStatistics()
         {
-            JobBis jobBis = new JobBis();
-            jobBis.CreateBisItemsFromXivGearAppSetItems(XivGearAppChosenBis, XivGearAppChosenFood);
+            var jobBis = GetJobBis();
+            if (jobBis == null) return null;
+
             return jobBis.SetParameters;
         }
 
@@ -623,6 +625,7 @@ namespace BisTracker.BiS
             XivGearAppResponse = null;
             XivGearAppChosenBis = null;
             SavedBis = null;
+            TempBis = null;
             EtroResponse = null;
             EquippedItems.Clear();
             FoundItems.Clear();
@@ -881,12 +884,14 @@ namespace BisTracker.BiS
                     return SavedBis;
 
                 case BisSheetType.Etro:
+                    if (TempBis != null) return TempBis;
                     if (EtroResponse == null) return null;
                     var etroBis = new JobBis();
                     etroBis.PopulateBisItemsFromEtro(EtroResponse);
                     return etroBis;
 
                 case BisSheetType.XIVGearApp:
+                    if (TempBis != null) return TempBis;
                     if (XivGearAppResponse == null) return null;
                     var xivAppBis = new JobBis();
                     xivAppBis.PopulateBisItemsFromXIVGearApp(XivGearAppResponse, SelectedXivGearAppSet);
