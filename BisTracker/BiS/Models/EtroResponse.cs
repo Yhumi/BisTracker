@@ -33,6 +33,9 @@ namespace BisTracker.BiS.Models
         [JsonProperty("job")]
         public int? Job { get; set; }
 
+        [JsonProperty("level")]
+        public int? Level { get; set; }
+
 
         [JsonProperty("weapon")]
         public int? Weapon { get; set; }
@@ -98,6 +101,7 @@ namespace BisTracker.BiS.Models
         public int? Food { get; set; } = null;
         public int? Medicine { get; set; } = null;
         public int? Job { get; set; } = null; 
+        public int? Level { get; set; } = null;
 
         public bool Error = false;
 
@@ -117,6 +121,7 @@ namespace BisTracker.BiS.Models
 
             Food = apiReponse.Food;
             Medicine = apiReponse.Medicine;
+            Level = apiReponse.Level;
 
             Job = apiReponse.Job;
 

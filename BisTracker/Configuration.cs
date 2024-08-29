@@ -31,15 +31,6 @@ public class Configuration : IPluginConfiguration
 
     public bool AllowOvermelding = false;
 
-    [NonSerialized]
-    public int AccessoryCost = 375;
-    [NonSerialized]
-    public int LeftSmallCost = 495;
-    [NonSerialized]
-    public int LeftBigCost = 825;
-    [NonSerialized]
-    public int WeeklyTomeCap  = 450;
-
     public List<JobBis>? SavedBis { get; set; }
 
     // the below exist just to make saving less cumbersome

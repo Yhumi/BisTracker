@@ -25,6 +25,7 @@ namespace BisTracker.BiS.Models
         public string? Name { get; set; }
         public int? Food { get; set; }
         public int? Medicine { get; set; }
+        public int? Level { get; set; }
 
         //Better system
         public List<JobBis_Item>? BisItems { get; set; }
@@ -46,6 +47,7 @@ namespace BisTracker.BiS.Models
             Name = jobBis.Name;
             Food = jobBis.Food;
             Medicine = jobBis.Medicine;
+            Level = jobBis.Level;
 
             BisItems = jobBis.BisItems;
 
@@ -57,7 +59,7 @@ namespace BisTracker.BiS.Models
         {
             if (xivGearAppResponse == null) return;
             Food = xivGearAppResponse.Food;
-            
+            Level = xivGearAppResponse.Level;
 
             if (xivGearAppResponse.Sets != null)
             {
@@ -117,6 +119,7 @@ namespace BisTracker.BiS.Models
             if (etroResponse.SetItems == null) return;
             Job = (uint?)etroResponse.Job;
             Name = etroResponse.Name;
+            Level = etroResponse.Level;
 
             foreach (var item in etroResponse.SetItems)
             {
@@ -134,14 +137,14 @@ namespace BisTracker.BiS.Models
             CalculateSetPrice();
         }
 
-        public void SetupItemStatistics()
+        public async Task SetupItemStatistics()
         {
             Svc.Log.Debug("Setting up statistics.");
             if (BisItems == null) { return; }
 
             foreach (var bisItem in BisItems)
             {
-                bisItem.SetupParams();
+                await Task.Run(bisItem.SetupParams);
             }
 
             CalculateSetParmeters();
@@ -355,6 +358,9 @@ namespace BisTracker.BiS.Models
         public int Id { get; set; }
         public string ItemName => LuminaSheets.ItemSheet[(uint)Id]?.Name.ExtractText() ?? string.Empty;
         public string ItemSet => LuminaSheets.ItemSheet[(uint)Id]?.ItemSeries.Value.Name.ExtractText() ?? string.Empty;
+        public uint? ItemShop { get; set; }
+
+        public int? TomeCost { get; set; }
         public CharacterEquippedGearSlotIndex GearSlot { get; set; }
         public List<JobBis_ItemMateria>? Materia { get; set; }
 
@@ -380,7 +386,7 @@ namespace BisTracker.BiS.Models
             }
 
             if (Id != 0)
-                SetupParams();
+                Task.Run(SetupParams);
         }
 
         public JobBis_Item(EtroItem? item)
@@ -408,10 +414,10 @@ namespace BisTracker.BiS.Models
             }
 
             if (Id != 0)
-                SetupParams();
+                Task.Run(SetupParams);
         }
 
-        public void SetupParams()
+        public async Task SetupParams()
         {
             BaseParameters = new List<JobBis_Parameter>();
 
@@ -453,6 +459,8 @@ namespace BisTracker.BiS.Models
                     }
                 }
             }
+
+            _ = Task.Run(SetupTomes);
 
             foreach (var materia in Materia)
             {
@@ -517,6 +525,46 @@ namespace BisTracker.BiS.Models
 
             return finalParameters;
         }
+    
+        private async Task SetupTomes()
+        {
+            ItemShop = LuminaSheets.SpecialShopSheet?.Values
+                .Where(x => x.Name.ExtractText().ToLower().Contains("augmentation") || x.Name.ExtractText().ToLower().Contains("allagan tomestones"))
+                .Where(x => x.Item.Any(y => y.Item[0].Row == (uint)Id)).FirstOrDefault()?.RowId ?? null;
+            SetTomeCost();
+        }
+        
+        public void SetTomeCost()
+        {
+            if (ItemShop == null) return;
+
+            SpecialShop? shop = LuminaSheets.SpecialShopSheet?[ItemShop.GetValueOrDefault()] ?? null;
+            if (shop == null || (!shop.Name.ExtractText().ToLower().Contains("augmentation") && !shop.Name.ExtractText().ToLower().Contains("allagan tomestones"))) return;
+
+            switch (GearSlot)
+            {
+                case CharacterEquippedGearSlotIndex.Head:
+                case CharacterEquippedGearSlotIndex.Gloves:
+                case CharacterEquippedGearSlotIndex.Feet:
+                    TomeCost = ConstantData.LeftSmallCost;
+                    break;
+                case CharacterEquippedGearSlotIndex.Body:
+                case CharacterEquippedGearSlotIndex.Legs:
+                    TomeCost = ConstantData.LeftBigCost;
+                    break;
+                case CharacterEquippedGearSlotIndex.RightRing:
+                case CharacterEquippedGearSlotIndex.LeftRing:
+                case CharacterEquippedGearSlotIndex.Ears:
+                case CharacterEquippedGearSlotIndex.Neck:
+                case CharacterEquippedGearSlotIndex.Wrists:
+                    TomeCost = ConstantData.AccessoryCost;
+                    break;
+                case CharacterEquippedGearSlotIndex.MainHand:
+                default:
+                    break;
+            }
+        }
+    
     }
 
     public class JobBis_ItemMateria
