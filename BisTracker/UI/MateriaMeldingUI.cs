@@ -87,9 +87,9 @@ namespace BisTracker.UI
 
             if (addonPtr->UldManager.NodeListCount > 1)
             {
-                if (addonPtr->UldManager.NodeList[1]->IsVisible())
+                if (addonPtr->UldManager.SearchNodeById(28)->IsVisible())
                 {
-                    var componentNode = addonPtr->UldManager.NodeList[1];
+                    var componentNode = addonPtr->UldManager.SearchNodeById(28);
 
                     if (!componentNode->IsVisible())
                         return;
@@ -97,7 +97,7 @@ namespace BisTracker.UI
                     //if (!IsEquippedTab(addonPtr->UldManager.NodeList[26]->GetAsAtkComponentDropdownList()))
                     //    return;
 
-                    var inventoryItemListComponentNode = addonPtr->UldManager.NodeList[17]->GetAsAtkComponentList();
+                    var inventoryItemListComponentNode = addonPtr->UldManager.SearchNodeById(13)->GetAsAtkComponentList();
                     int selectedItemPointerIndex = GetSelectedItemIndex(inventoryItemListComponentNode);
                     if (selectedItemPointerIndex < 0) return;
 
@@ -105,7 +105,7 @@ namespace BisTracker.UI
 
                     if (selectedItemPointer != null)
                     {
-                        var selectedItemName = GetStringFromTextNode(selectedItemPointer->UldManager.NodeList[10]->GetAsAtkTextNode());
+                        var selectedItemName = GetStringFromTextNode(selectedItemPointer->UldManager.SearchNodeById(3)->GetAsAtkTextNode());
 
                         JobBis_Item? bisItem = SavedJobBis.BisItems.Where(x => 
                             x.ItemName != null && 
@@ -117,7 +117,7 @@ namespace BisTracker.UI
                         {
                             DrawBisPieceWindow(componentNode, bisItem, selectedItemPointer, selectedItemPointerIndex);
 
-                            if (IsEquippedTab(addonPtr->UldManager.NodeList[26]->GetAsAtkComponentDropdownList()) && bisItem.Materia.Count > 0 && P.Config.HighlightBisMateriaInMateriaMelder)
+                            if (IsEquippedTab(addonPtr->UldManager.SearchNodeById(4)->GetAsAtkComponentDropdownList()) && bisItem.Materia.Count > 0 && P.Config.HighlightBisMateriaInMateriaMelder)
                             {
                                 var item = CharacterInfo.GetEquippedItem(bisItem.Id);
                                 if (item == null) return;
@@ -129,7 +129,7 @@ namespace BisTracker.UI
                                 var nextMateriaToMeld = bisItem.Materia[slottedMelds.Count()];
                                 if (nextMateriaToMeld == null) return;
 
-                                var materiaItemListComponentNode = addonPtr->UldManager.NodeList[7]->GetAsAtkComponentList();
+                                var materiaItemListComponentNode = addonPtr->UldManager.SearchNodeById(23)->GetAsAtkComponentList();
                                 UpdateBisMateriaNameColor(materiaItemListComponentNode, new List<string>() { nextMateriaToMeld.ItemName ?? string.Empty });
                             }
                         }
@@ -216,10 +216,10 @@ namespace BisTracker.UI
                 for (var i = 3; i < listItemCount - 2; i++)
                 {
                     var listItem = materiaItemListComponentNode->UldManager.NodeList[i]->GetAsAtkComponentNode();
-                    var materiaText = listItem->GetComponent()->UldManager.NodeList[5]->GetAsAtkTextNode()->NodeText.ExtractText();
+                    var materiaText = listItem->GetComponent()->UldManager.SearchNodeById(3)->GetAsAtkTextNode()->NodeText.ExtractText();
                     if (bisMateriaNames.Contains(materiaText))
                     {
-                        listItem->GetComponent()->UldManager.NodeList[5]->GetAsAtkTextNode()->SetText($"\u0002H\u0002D\u0003\u0002I\u0002E\u0003{materiaText}\u0002I\u0002\u0001\u0003\u0002H\u0002\u0001\u0003");
+                        listItem->GetComponent()->UldManager.SearchNodeById(3)->GetAsAtkTextNode()->SetText($"\u0002H\u0002D\u0003\u0002I\u0002E\u0003{materiaText}\u0002I\u0002\u0001\u0003\u0002H\u0002\u0001\u0003");
                     }
                 }
             }
@@ -236,7 +236,7 @@ namespace BisTracker.UI
                 for (var i = 3; i < listItemCount - 2; i++)
                 {
                     var listItem = inventoryItemListComponentNode->UldManager.NodeList[i]->GetAsAtkComponentNode();
-                    if (listItem->GetComponent()->UldManager.NodeList[1]->IsVisible())
+                    if (listItem->GetComponent()->UldManager.SearchNodeById(12)->IsVisible())
                     {
                         return i;
                     }
@@ -251,8 +251,8 @@ namespace BisTracker.UI
 
         public unsafe static bool IsEquippedTab(AtkComponentDropDownList* materiaMeldingDropdown)
         {
-            var checkBoxNode = materiaMeldingDropdown->UldManager.NodeList[1]->GetAsAtkComponentCheckBox();
-            var selectedItem = checkBoxNode->UldManager.NodeList[2]->GetAsAtkTextNode();
+            var checkBoxNode = materiaMeldingDropdown->UldManager.SearchNodeById(2)->GetAsAtkComponentCheckBox();
+            var selectedItem = checkBoxNode->UldManager.SearchNodeById(3)->GetAsAtkTextNode();
             return selectedItem->NodeText.ExtractText().Trim().ToLower() == "equipped";
         }
 
@@ -276,9 +276,9 @@ namespace BisTracker.UI
 
             if (addonPtr->UldManager.NodeListCount > 1)
             {
-                if (addonPtr->UldManager.NodeList[1]->IsVisible())
+                if (addonPtr->UldManager.SearchNodeById(28)->IsVisible())
                 {
-                    var node = addonPtr->UldManager.NodeList[1];
+                    var node = addonPtr->UldManager.SearchNodeById(28);
 
                     if (!node->IsVisible())
                         return;
@@ -348,7 +348,7 @@ namespace BisTracker.UI
                         //ImGui.EndCombo();
 
                         ImGui.SameLine();
-                        if (ImGuiEx.ButtonCond("Meld Full Set", () => SelectedJobBisName != string.Empty && IsEquippedTab(addonPtr->UldManager.NodeList[26]->GetAsAtkComponentDropdownList())) && AutoMeld.Initialised)
+                        if (ImGuiEx.ButtonCond("Meld Full Set", () => SelectedJobBisName != string.Empty && IsEquippedTab(addonPtr->UldManager.SearchNodeById(4)->GetAsAtkComponentDropdownList())) && AutoMeld.Initialised)
                         {
                             EnqueueFullSet();
                         }
