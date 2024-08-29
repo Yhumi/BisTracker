@@ -594,8 +594,8 @@ namespace BisTracker.BiS
         {
             if (EtroResponse == null) { return null; }
 
-            JobBis jobBis = new JobBis();
-            jobBis.PopulateBisItemsFromEtro(EtroResponse);
+            JobBis? jobBis = GetJobBis();
+            if (jobBis == null) return null;
 
             return jobBis.SetParameters;
         }
@@ -858,15 +858,15 @@ namespace BisTracker.BiS
 
                 case BisSheetType.Etro:
                     if (EtroResponse == null) return;
-                    var etroBis = new JobBis();
-                    etroBis.PopulateBisItemsFromEtro(EtroResponse);
+                    var etroBis = GetJobBis();
+                    if (etroBis == null) return;
                     P.MeldUI.SetBis(etroBis);
                     break;
 
                 case BisSheetType.XIVGearApp:
                     if (XivGearAppResponse == null) return;
-                    var xivAppBis = new JobBis();
-                    xivAppBis.PopulateBisItemsFromXIVGearApp(XivGearAppResponse, SelectedXivGearAppSet);
+                    var xivAppBis = GetJobBis();
+                    if (xivAppBis == null) return;
                     P.MeldUI.SetBis(xivAppBis);
                     break;
 
