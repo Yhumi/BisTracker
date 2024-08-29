@@ -283,8 +283,6 @@ namespace BisTracker.BiS
                 if (setParameters == null) return;
                 setParameters = setParameters.Where(x => x.Param != 0).ToList();
 
-
-
                 ImGuiEx.LineCentered("###BisStats", () => ImGuiEx.TextUnderlined("Set Statistics"));
                 using (var table = ImRaii.Table($"BisParamTable", setParameters.Count, ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Borders))
                 {
@@ -305,27 +303,39 @@ namespace BisTracker.BiS
                     }
                 }
 
-                //ImGuiEx.LineCentered("###TomeStats", () => ImGuiEx.TextUnderlined("Tomes"));
-                //ImGuiEx.LineCentered("###CenterTable", () =>
-                //{
-                //    using (var table = ImRaii.Table($"BisTomeStats", 3, ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Borders, new Vector2((ImGui.GetContentRegionAvail() / 2).X, 0)))
-                //    {
-                //        ImGui.TableSetupColumn("Total Tomes");
-                //        ImGui.TableSetupColumn("Remaining Tomes");
-                //        ImGui.TableSetupColumn("Weeks Remaining");
+                var jobBis = GetJobBis();
+                if (jobBis == null) return;
 
-                //        ImGui.TableHeadersRow();
-                //        ImGui.TableNextRow();
+                var level = jobBis.Level != null ? jobBis.Level
+                    : (LuminaSheets.ClassJobSheet[(uint)jobBis.Job].Abbreviation == "BLU" ? ConstantData.LimitedLevelCap : ConstantData.LevelCap);
 
-                //        for (var i = 0; i < 3; i++)
-                //        {
-                //            ImGui.TableNextColumn();
-                //            ImGui.Text("0");
-                //        }
-                //    }
-                //});
-                
+                if (level == 100)
+                {
+                    var tomeStats = GetSetTomeCalculation(jobBis);
 
+                    ImGuiEx.LineCentered("###TomeStats", () => ImGuiEx.TextUnderlined("Tomes"));
+                    ImGuiEx.LineCentered("###CenterTable", () =>
+                    {
+                        using (var table = ImRaii.Table($"BisTomeStats", 3, ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Borders, new Vector2((ImGui.GetContentRegionAvail() / 2).X, 0)))
+                        {
+                            ImGui.TableSetupColumn("Total Tomes");
+                            ImGui.TableSetupColumn("Remaining Tomes");
+                            ImGui.TableSetupColumn("Weeks Remaining");
+
+                            ImGui.TableHeadersRow();
+                            ImGui.TableNextRow();
+
+                            ImGui.TableNextColumn();
+                            ImGui.Text($"{tomeStats.total ?? 0}");
+
+                            ImGui.TableNextColumn();
+                            ImGui.Text($"{tomeStats.remaining ?? 0}");
+
+                            ImGui.TableNextColumn();
+                            ImGui.Text($"{tomeStats.weeks ?? 0}");
+                        }
+                    });
+                }
             }
         }
 
@@ -815,13 +825,13 @@ namespace BisTracker.BiS
             return $"{jobNameCapitalised} ({job.Abbreviation.RawString})";
         }
     
-        private static void LoadBisFromConfig(string? setName = null)
+        private static async void LoadBisFromConfig(string? setName = null)
         {
             var jobBis = setName != null ? new JobBis(P.Config.SavedBis?.Where(x => x.Name == setName).SingleOrDefault()) : new JobBis(P.Config.SavedBis?.Where(x => x.Job == SelectedJob).FirstOrDefault());
             if (jobBis == null || jobBis.BisItems == null) return;
             if (setName == null) { SelectedSavedSet = jobBis.Name; }
 
-            jobBis.SetupItemStatistics();
+            await jobBis.SetupItemStatistics();
             //jobBis.CalculateSetPrice();
 
             Svc.Log.Debug($"Saved bis found for {SelectedJobPreview}.");
@@ -840,6 +850,25 @@ namespace BisTracker.BiS
 
             Svc.NotificationManager.AddNotification(new Dalamud.Interface.ImGuiNotification.Notification() { Content = $"Deleted set for {JobNameCleanup(LuminaSheets.ClassJobSheet[SelectedJob])} with name {setName}", Type = Dalamud.Interface.ImGuiNotification.NotificationType.Success });
             P.Config.Save();
+        }
+
+        public static (int? total, int? remaining, double? weeks) GetSetTomeCalculation(JobBis? bis)
+        {
+            if (bis == null) return (null, null, null);
+
+            var total = 0;
+            var remaining = 0;
+            var combinedKnownItems = EquippedItems.Union(FoundItems);
+            //Svc.Log.Debug($"Known: {String.Join(',', combinedKnownItems)}");
+            foreach (var item in bis.BisItems)
+            {
+                total += item.TomeCost ?? 0;
+                if (!combinedKnownItems.Contains(item.GearSlot))
+                    remaining += item.TomeCost ?? 0;
+            }
+
+            var weeks = (double)remaining / ConstantData.WeeklyTomeCap;
+            return (total, remaining, weeks);
         }
 
         private static bool IsBisSelected()

@@ -96,7 +96,7 @@ public unsafe class BisTracker : IDalamudPlugin
     {
         PluginUi.Dispose();
 
-        Svc.Commands.RemoveHandler(CommandName);
+        GenericHelpers.Safe(() => Svc.Commands.RemoveHandler(CommandName));
         Svc.PluginInterface.UiBuilder.OpenConfigUi -= DrawSettingsUI;
         Svc.PluginInterface.UiBuilder.Draw -= ws.Draw;
         Svc.PluginInterface.UiBuilder.OpenMainUi -= DrawMainUI;
