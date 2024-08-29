@@ -22,6 +22,7 @@ using ECommons.Automation;
 using BisTracker.Melding;
 using static FFXIVClientStructs.FFXIV.Client.UI.Misc.RaptureGearsetModule.Delegates;
 using System.Xml.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BisTracker.BiS
 {
@@ -332,7 +333,7 @@ namespace BisTracker.BiS
                             ImGui.Text($"{tomeStats.remaining ?? 0}");
 
                             ImGui.TableNextColumn();
-                            ImGui.Text($"{tomeStats.weeks ?? 0}");
+                            ImGui.Text($"{(int)Math.Ceiling(tomeStats.weeks ?? 0)}");
                         }
                     });
                 }
@@ -616,11 +617,6 @@ namespace BisTracker.BiS
             if (jobBis == null) return null;
 
             return jobBis.SetParameters;
-        }
-
-        private static void GetSavedSetTomes()
-        {
-
         }
 
         private static void DrawItemIcon(Item icon)
