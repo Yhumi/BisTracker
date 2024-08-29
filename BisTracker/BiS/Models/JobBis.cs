@@ -64,6 +64,7 @@ namespace BisTracker.BiS.Models
                 if (selectedSetName == null) return;
                 Name = selectedSetName;
                 var selectedSet = GetSetFromSelectedSetName(xivGearAppResponse.Sets, selectedSetName);
+                Svc.Log.Debug($"Found: {selectedSet}");
                 if (selectedSet == null) return;
 
                 CreateBisItemsFromXivGearAppSetItems(selectedSet.Items, selectedSet.Food);
@@ -80,6 +81,7 @@ namespace BisTracker.BiS.Models
 
         private XivGearApp_Set? GetSetFromSelectedSetName(XivGearApp_Set[] xivGearAppSets, string selectedSetName)
         {
+            Svc.Log.Debug($"Finding: {selectedSetName}");
             return xivGearAppSets.Where(x => x.Name.ToLower() == selectedSetName.ToLower()).FirstOrDefault() ?? null;
         }
 

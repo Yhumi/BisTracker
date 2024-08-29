@@ -14,20 +14,23 @@ namespace BisTracker.Melding
     {
         public static bool IsMeldingMenuOpen() => Svc.GameGui.GetAddonByName("MateriaAttach", 1) != IntPtr.Zero;
 
-        public unsafe static void OpenMateriaMelder()
+        public unsafe static bool OpenMateriaMelder()
         {
             if (!IsMeldingMenuOpen())
             {
                 ActionManager.Instance()->UseAction(ActionType.GeneralAction, 13);
             }
+            return true;
         }
 
-        public unsafe static void SelectEquippedItemsDropdown()
+        public unsafe static bool SelectEquippedItemsDropdown()
         {
             if (TryGetAddonByName<AtkUnitBase>("MateriaAttach", out var materiaAttach))
             {
                 Callback.Fire(materiaAttach, true, 0, 6);
+                return true;
             }
+            return false;
         }
     }
 }

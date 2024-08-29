@@ -315,7 +315,7 @@ namespace BisTracker.Melding
                 {
                     if (materiaAffixed.Count() >= luminaItem.MateriaSlotCount)
                     {
-                        var bulkOvermeld = materiaAttachDialogAddon->UldManager.NodeList[5]->GetAsAtkComponentCheckBox();
+                        var bulkOvermeld = materiaAttachDialogAddon->UldManager.SearchNodeById(39)->GetAsAtkComponentCheckBox();
                         bulkOvermeld->SetChecked(true);
                     }
 
@@ -345,7 +345,7 @@ namespace BisTracker.Melding
                 for (var i = 3; i < listItemCount - 2; i++)
                 {
                     var listItem = materiaList->GetComponent()->UldManager.NodeList[i]->GetAsAtkComponentNode();
-                    var materiaText = listItem->GetComponent()->UldManager.NodeList[5]->GetAsAtkTextNode()->NodeText.ExtractText();
+                    var materiaText = listItem->GetComponent()->UldManager.SearchNodeById(3)->GetAsAtkTextNode()->NodeText.ExtractText();
                     Svc.Log.Debug($"Index {i} Materia Name: {materiaText}");
                     if (materiaName == materiaText) return i;
                 }
