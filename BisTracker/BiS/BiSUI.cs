@@ -105,8 +105,8 @@ namespace BisTracker.BiS
                     if (IsBisSelected())
                         PopulateMeldBis();
 
-                    P.TM.Enqueue(() => MeldingAddonUtils.OpenMateriaMelder());
-                    P.TM.Enqueue(() => MeldingAddonUtils.SelectEquippedItemsDropdown());
+                    P.TM.Enqueue(() => MeldingAddonUtils.OpenMateriaMelder(), "Open Melder");
+                    P.TM.Enqueue(() => MeldingAddonUtils.SelectEquippedItemsDropdown(), "Select Equipped");
                 }
             }  
 
