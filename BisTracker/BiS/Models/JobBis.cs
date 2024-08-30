@@ -256,18 +256,18 @@ namespace BisTracker.BiS.Models
 
             if (jobCategory.Contains("land"))
             {
-                var gpParam = SetParameters.Where(x => x.Param == ConstantData.DoHStatIds["GP"]).FirstOrDefault();
+                var gpParam = SetParameters.Where(x => x.Param == ConstantData.DoLStatIds["GP"]).FirstOrDefault();
                 if (gpParam == null)
                 {
                     gpParam = new JobBis_Parameter()
                     {
-                        Param = ConstantData.DoHStatIds["GP"],
+                        Param = ConstantData.DoLStatIds["GP"],
                         Value = 0
                     };
                     SetParameters.Add(gpParam);
                 }
 
-                SetParameters.Where(x => x.Param == ConstantData.DoHStatIds["GP"]).First().Value = (short)(gpParam.Value + ConstantData.LevelStats[100].GP);
+                SetParameters.Where(x => x.Param == ConstantData.DoLStatIds["GP"]).First().Value = (short)(gpParam.Value + ConstantData.LevelStats[100].GP);
             }
 
             //Add food data
