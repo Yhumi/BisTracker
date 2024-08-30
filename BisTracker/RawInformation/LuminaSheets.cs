@@ -21,6 +21,8 @@ namespace BisTracker.RawInformation
         public static Dictionary<uint, Materia>? MateriaSheet;
         public static Dictionary<uint, BaseParam>? BaseParamSheet;
         public static Dictionary<uint, SpecialShop>? SpecialShopSheet;
+        public static Dictionary<uint, TomestonesItem>? TomestonesItemSheet;
+        public static Dictionary<uint, Tomestones>? TomestonesSheet;
 
         public static void Init()
         {
@@ -40,6 +42,12 @@ namespace BisTracker.RawInformation
                         .ToDictionary(i => i.RowId, i => i);
 
             SpecialShopSheet = Svc.Data?.GetExcelSheet<SpecialShop>()?
+                        .ToDictionary(i => i.RowId, i => i);
+
+            TomestonesItemSheet = Svc.Data?.GetExcelSheet<TomestonesItem>()?
+                        .ToDictionary(i => i.RowId, i => i);
+
+            TomestonesSheet = Svc.Data?.GetExcelSheet<Tomestones>()?
                         .ToDictionary(i => i.RowId, i => i);
         }
 

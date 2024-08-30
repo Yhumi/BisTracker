@@ -60,6 +60,7 @@ namespace BisTracker.BiS
         //Found slots 
         private static List<CharacterEquippedGearSlotIndex> FoundItems = new();
         private static List<CharacterEquippedGearSlotIndex> EquippedItems = new();
+        private static List<CharacterEquippedGearSlotIndex> NonUpgraded = new();
 
         private static readonly string[] ExcludedJobs = ["CNJ", "ADV", "ARC", "GLA", "THM", "PGL", "MRD", "LNC", "ACN", "ROG"];
         private static string[] ValidHosts = ["xivgear.app", "www.xivgear.app", "etro.gg", "www.etro.gg"];
@@ -307,36 +308,48 @@ namespace BisTracker.BiS
                 var jobBis = GetJobBis();
                 if (jobBis == null) return;
 
-                var level = jobBis.Level != null ? jobBis.Level
-                    : (LuminaSheets.ClassJobSheet[(uint)jobBis.Job].Abbreviation == "BLU" ? ConstantData.LimitedLevelCap : ConstantData.LevelCap);
+                var tomeStats = GetSetTomeCalculation(jobBis);
 
-                if (level == 100)
+                ImGuiEx.LineCentered("###TomeStats", () => ImGuiEx.TextUnderlined("Tomes"));
+                ImGuiEx.LineCentered("###CenterTable", () =>
                 {
-                    var tomeStats = GetSetTomeCalculation(jobBis);
-
-                    ImGuiEx.LineCentered("###TomeStats", () => ImGuiEx.TextUnderlined("Tomes"));
-                    ImGuiEx.LineCentered("###CenterTable", () =>
+                    using (var table = ImRaii.Table($"BisTomeStats", 4, ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Borders | ImGuiTableFlags.SizingFixedFit, new Vector2(ImGui.GetContentRegionAvail().X * 0.75f, 0)))
                     {
-                        using (var table = ImRaii.Table($"BisTomeStats", 3, ImGuiTableFlags.NoHostExtendX | ImGuiTableFlags.Borders, new Vector2((ImGui.GetContentRegionAvail() / 2).X, 0)))
+                        ImGui.TableSetupColumn("Tomestone Type", ImGuiTableColumnFlags.WidthFixed);
+                        ImGui.TableSetupColumn("Total Tomes", ImGuiTableColumnFlags.WidthFixed);
+                        ImGui.TableSetupColumn("Remaining Tomes", ImGuiTableColumnFlags.WidthFixed);
+                        ImGui.TableSetupColumn("Weeks Remaining", ImGuiTableColumnFlags.WidthFixed);
+
+                        ImGui.TableHeadersRow();
+                        ImGui.TableNextRow();
+
+                        foreach (var tome in tomeStats.currencyTotals ?? []) 
                         {
-                            ImGui.TableSetupColumn("Total Tomes");
-                            ImGui.TableSetupColumn("Remaining Tomes");
-                            ImGui.TableSetupColumn("Weeks Remaining");
-
-                            ImGui.TableHeadersRow();
-                            ImGui.TableNextRow();
+                            var currencyType = CharacterInfo.GetPlayerTomestoneFromShop(tome.Key);
+                            ImGui.TableNextColumn();
+                            ImGui.Text($"{LuminaSheets.ItemSheet?[currencyType.tomestoneItemId].Name.ExtractText()}");
 
                             ImGui.TableNextColumn();
-                            ImGui.Text($"{tomeStats.total ?? 0}");
+                            ImGui.Text($"{tome.Value}");
 
                             ImGui.TableNextColumn();
-                            ImGui.Text($"{tomeStats.remaining ?? 0}");
+                            ImGui.Text($"{currencyType.tomestoneCount} / {tomeStats.remaining?[tome.Key] ?? 0}");
 
                             ImGui.TableNextColumn();
-                            ImGui.Text($"{(int)Math.Ceiling(tomeStats.weeks ?? 0)}");
+
+                            var weeklyCap = LuminaSheets.TomestonesSheet?[(uint)tome.Key].WeeklyLimit ?? 0;
+
+                            if (weeklyCap == 0)
+                            {
+                                ImGui.Text($"-");
+                                continue;
+                            }
+
+                            var weeks = (double)(Math.Max((tomeStats.remaining?[tome.Key] ?? 0) - currencyType.tomestoneCount, 0)) / weeklyCap;
+                            ImGui.Text($"{Math.Ceiling(weeks)}");
                         }
-                    });
-                }
+                    }
+                });
             }
         }
 
@@ -416,8 +429,8 @@ namespace BisTracker.BiS
 
                         TempBis = bis;
 
-                        CheckForItemsEquipped(bis);
-                        CheckForItemsInArmouryChest(bis);
+                        Task.Run(() => CheckForItemsEquipped(bis));
+                        Task.Run(() => CheckForItemsInArmouryChest(bis));
                     }
                 }
 
@@ -635,6 +648,7 @@ namespace BisTracker.BiS
             EtroResponse = null;
             EquippedItems.Clear();
             FoundItems.Clear();
+            NonUpgraded.Clear();
         }
 
         public static void ResetInputs()
@@ -682,8 +696,8 @@ namespace BisTracker.BiS
                 var jobBis = GetJobBis();
                 TempBis = jobBis;
 
-                CheckForItemsEquipped(jobBis);
-                CheckForItemsInArmouryChest(jobBis);
+                Task.Run(() => CheckForItemsEquipped(jobBis));
+                Task.Run(() => CheckForItemsInArmouryChest(jobBis));
             }
         }
 
@@ -708,8 +722,8 @@ namespace BisTracker.BiS
             {
                 case BisSheetType.Saved:
                     if (SavedBis == null) return;
-                    CheckForItemsEquipped(SavedBis);
-                    CheckForItemsInArmouryChest(SavedBis);
+                    Task.Run(() => CheckForItemsEquipped(SavedBis));
+                    Task.Run(() => CheckForItemsInArmouryChest(SavedBis));
                     GetSavedSetStatistics();
                     break;
 
@@ -733,19 +747,19 @@ namespace BisTracker.BiS
         {
             if (TempBis == null) return;
 
-            CheckForItemsEquipped(TempBis);
-            CheckForItemsInArmouryChest(TempBis);
+            Task.Run(() => CheckForItemsEquipped(TempBis));
+            Task.Run(() => CheckForItemsInArmouryChest(TempBis));
         }
 
         private static void XIVGearAppItemCheck()
         {
             if (TempBis == null) return;
 
-            CheckForItemsEquipped(TempBis);
-            CheckForItemsInArmouryChest(TempBis);
+            Task.Run(() => CheckForItemsEquipped(TempBis));
+            Task.Run(() => CheckForItemsInArmouryChest(TempBis));
         }
 
-        private static unsafe void CheckForItemsEquipped(JobBis bis)
+        private static unsafe async void CheckForItemsEquipped(JobBis bis)
         {
             if (bis.BisItems == null) return;
             foreach (var item in bis.BisItems)
@@ -767,11 +781,23 @@ namespace BisTracker.BiS
                 {
                     Svc.Log.Debug($"Found equipped item: {item.Id}");
                     EquippedItems.Add(item.GearSlot);
+                    continue;
+                }
+
+                if (item.ItemName.ToLower().Contains("augmented"))
+                {
+                    var unaugmentedItemId = LuminaSheets.ItemSheet.FirstOrDefault(x => x.Value.Name.ExtractText() == item.ItemName.Replace("Augmented ", "")).Key;
+                    Svc.Log.Debug($"{unaugmentedItemId}");
+                    if (equippedGear->ItemId == unaugmentedItemId)
+                    {
+                        Svc.Log.Debug($"Found unagumented item: {unaugmentedItemId}");
+                        NonUpgraded.Add(item.GearSlot);
+                    }
                 }
             }
         }
 
-        private static unsafe void CheckForItemsInArmouryChest(JobBis bis)
+        private static unsafe async void CheckForItemsInArmouryChest(JobBis bis)
         {
             if (bis.BisItems == null) return;
             foreach (var item in bis.BisItems.Where(x => !FoundItems.Contains(x.GearSlot)))
@@ -785,6 +811,18 @@ namespace BisTracker.BiS
                 {
                     Svc.Log.Debug($"Found armoury chest ({item.GearSlot.ToString()}) item: {item.Id}");
                     FoundItems.Add(item.GearSlot);
+                    continue;
+                }
+
+                if (item.ItemName.ToLower().Contains("augmented"))
+                {
+                    var unaugmentedItemId = LuminaSheets.ItemSheet.FirstOrDefault(x => x.Value.Name.ExtractText() == item.ItemName.Replace("Augmented ", "")).Key;
+                    var unaugItem = CharacterInfo.SearchForItemInArmouryChest(item.Id, item.GearSlot);
+                    if (unaugItem != null)
+                    {
+                        Svc.Log.Debug($"Found armoury chest ({item.GearSlot.ToString()}) unagumented item: {unaugmentedItemId}");
+                        NonUpgraded.Add(item.GearSlot);
+                    }
                 }
             }
         }
@@ -834,8 +872,8 @@ namespace BisTracker.BiS
             SheetType = BisSheetType.Saved;
             SavedBis = jobBis;
 
-            CheckForItemsEquipped(jobBis);
-            CheckForItemsInArmouryChest(jobBis);
+            Task.Run(() => CheckForItemsEquipped(jobBis));
+            Task.Run(() => CheckForItemsInArmouryChest(jobBis));
         }
 
         private static void DeleteBisByName(string? setName = null)
@@ -848,23 +886,32 @@ namespace BisTracker.BiS
             P.Config.Save();
         }
 
-        public static (int? total, int? remaining, double? weeks) GetSetTomeCalculation(JobBis? bis)
+        public static (Dictionary<int, uint>? currencyTotals, Dictionary<int, uint>? remaining) GetSetTomeCalculation(JobBis? bis)
         {
-            if (bis == null) return (null, null, null);
+            if (bis == null) return (null, null);
 
-            var total = 0;
-            var remaining = 0;
-            var combinedKnownItems = EquippedItems.Union(FoundItems);
+            Dictionary<int, uint> currencyTotals = new Dictionary<int, uint>();
+            Dictionary<int, uint> currencyRemaining = new Dictionary<int, uint>();
+
+            var combinedKnownItems = EquippedItems.Union(FoundItems).Union(NonUpgraded);
             //Svc.Log.Debug($"Known: {String.Join(',', combinedKnownItems)}");
-            foreach (var item in bis.BisItems)
-            {
-                total += item.TomeCost ?? 0;
-                if (!combinedKnownItems.Contains(item.GearSlot))
-                    remaining += item.TomeCost ?? 0;
-            }
 
-            var weeks = (double)remaining / ConstantData.WeeklyTomeCap;
-            return (total, remaining, weeks);
+            foreach (var item in bis.BisItems ?? [])
+            {
+                if (item.TomestoneCost == null || item.TomestoneCost.TomestoneId == null) continue;
+
+                if (!currencyTotals.ContainsKey(item.TomestoneCost.TomestoneId.Value))
+                    currencyTotals.Add(item.TomestoneCost.TomestoneId.Value, 0);
+
+                if (!currencyRemaining.ContainsKey(item.TomestoneCost.TomestoneId.Value))
+                    currencyRemaining.Add(item.TomestoneCost.TomestoneId.Value, 0);
+
+                currencyTotals[item.TomestoneCost.TomestoneId.Value] += item.TomestoneCost.Cost;
+                if (!combinedKnownItems.Contains(item.GearSlot))
+                    currencyRemaining[item.TomestoneCost.TomestoneId.Value] += item.TomestoneCost.Cost;
+            }
+;
+            return (currencyTotals, currencyRemaining);
         }
 
         private static bool IsBisSelected()
