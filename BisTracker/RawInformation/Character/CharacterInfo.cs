@@ -25,6 +25,15 @@ namespace BisTracker.RawInformation.Character
             CharacterLevel = Svc.ClientState.LocalPlayer?.Level;
         }
 
+        public static unsafe (uint tomestoneItemId, uint tomestoneCount) GetPlayerTomestoneFromShop(int shopTomestoneCostId)
+        {
+            //Svc.Log.Debug($"Checking for Shop TomestoneId: {shopTomestoneCostId}");
+            var tomestone = LuminaSheets.TomestonesItemSheet?.FirstOrDefault(x => x.Value.Tomestones.Row == shopTomestoneCostId);
+            if (!tomestone.HasValue) return (0, 0);
+
+            return (tomestone.Value.Value.Item.Row, InventoryManager.Instance()->GetTomestoneCount(tomestone.Value.Value.Item.Row));
+        }
+
         public static unsafe void SetCharaInventoryPointers()
         {
             EquippedGear = InventoryManager.Instance()->GetInventoryContainer(InventoryType.EquippedItems);
@@ -226,10 +235,12 @@ namespace BisTracker.RawInformation.Character
 
             return null;
         }
-        
+
         public static byte? CharacterLevel;
         public static Job JobID;
         public static uint JobIDUint;
+
+        public static Dictionary<uint, uint> PlayerTomestones = new();
 
         public static InventoryContainer* EquippedGear;
     }

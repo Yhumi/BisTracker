@@ -2,6 +2,8 @@ using BisTracker.RawInformation;
 using BisTracker.RawInformation.Character;
 using ECommons;
 using ECommons.DalamudServices;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using Lumina.Excel.GeneratedSheets2;
 using Microsoft.VisualBasic;
 using System;
@@ -108,8 +110,7 @@ namespace BisTracker.BiS.Models
 
             Food = food;
 
-            CalculateSetParmeters();
-            CalculateSetPrice();
+            Task.Run(() => CalculateSetParmeters());
         }
 
         public void PopulateBisItemsFromEtro(EtroResponse etroResponse)
@@ -133,8 +134,7 @@ namespace BisTracker.BiS.Models
                     Food = (int)foodItem.RowId;
             }
 
-            CalculateSetParmeters();
-            CalculateSetPrice();
+            Task.Run(() => CalculateSetParmeters());
         }
 
         public async Task SetupItemStatistics()
@@ -142,15 +142,15 @@ namespace BisTracker.BiS.Models
             Svc.Log.Debug("Setting up statistics.");
             if (BisItems == null) { return; }
 
-            foreach (var bisItem in BisItems)
-            {
-                await Task.Run(bisItem.SetupParams);
-            }
+            //foreach (var bisItem in BisItems)
+            //{
+            //    await Task.Run(bisItem.SetupParams);
+            //}
 
             CalculateSetParmeters();
         }
 
-        public void CalculateSetParmeters()
+        public async void CalculateSetParmeters()
         {
             SetParameters = new List<JobBis_Parameter>();
             if (BisItems == null)
@@ -158,6 +158,7 @@ namespace BisTracker.BiS.Models
 
             foreach (var item in BisItems)
             {
+                await item.SetupParams();
                 var itemParams = item.GetParametersWithMateria();
 
                 if (itemParams != null)
@@ -294,16 +295,6 @@ namespace BisTracker.BiS.Models
             }
         }
     
-        public void CalculateSetPrice()
-        {
-            if (BisItems == null)
-                BisItems = new();
-            foreach (var item in BisItems)
-            {
-                //Svc.Log.Debug($"SpecialShopCategory for {item.ItemName}: {LuminaSheets.GetSpecialShopContainingItem(item.Id)}");
-            }
-        }
-    
         public ushort GetMainStatModifierForJob(uint stat)
         {
             var jobData = LuminaSheets.ClassJobSheet[Job.GetValueOrDefault()];
@@ -358,9 +349,9 @@ namespace BisTracker.BiS.Models
         public int Id { get; set; }
         public string ItemName => LuminaSheets.ItemSheet[(uint)Id]?.Name.ExtractText() ?? string.Empty;
         public string ItemSet => LuminaSheets.ItemSheet[(uint)Id]?.ItemSeries.Value.Name.ExtractText() ?? string.Empty;
-        public uint? ItemShop { get; set; }
 
-        public int? TomeCost { get; set; }
+        public JobBis_ItemTomestoneCost? TomestoneCost { get; set; }
+
         public CharacterEquippedGearSlotIndex GearSlot { get; set; }
         public List<JobBis_ItemMateria>? Materia { get; set; }
 
@@ -385,8 +376,8 @@ namespace BisTracker.BiS.Models
                 }
             }
 
-            if (Id != 0)
-                Task.Run(SetupParams);
+            //if (Id != 0)
+            //    Task.Run(SetupParams);
         }
 
         public JobBis_Item(EtroItem? item)
@@ -413,8 +404,8 @@ namespace BisTracker.BiS.Models
                     Materia.Add(new(item.Materia.MateriaSlot5));
             }
 
-            if (Id != 0)
-                Task.Run(SetupParams);
+            //if (Id != 0)
+            //    Task.Run(SetupParams);
         }
 
         public async Task SetupParams()
@@ -460,7 +451,7 @@ namespace BisTracker.BiS.Models
                 }
             }
 
-            _ = Task.Run(SetupTomes);
+            Task.Run(SetupTomes);
 
             foreach (var materia in Materia)
             {
@@ -528,41 +519,40 @@ namespace BisTracker.BiS.Models
     
         private async Task SetupTomes()
         {
-            ItemShop = LuminaSheets.SpecialShopSheet?.Values
-                .Where(x => x.Name.ExtractText().ToLower().Contains("augmentation") || x.Name.ExtractText().ToLower().Contains("allagan tomestones"))
-                .Where(x => x.Item.Any(y => y.Item[0].Row == (uint)Id)).FirstOrDefault()?.RowId ?? null;
-            SetTomeCost();
+            var itemId = (uint)Id;
+            if (ItemName.Contains("Augmented") && LuminaSheets.ItemSheet[(uint)Id].LevelEquip == ConstantData.LevelCap)
+                itemId = LuminaSheets.ItemSheet.FirstOrDefault(x => x.Value.Name.ExtractText() == ItemName.Replace("Augmented ", "")).Key;
+            if (itemId == 0) return;
+
+            Svc.Log.Debug($"Searching for {LuminaSheets.ItemSheet[itemId].Name} in shops");
+
+            var itemShop = LuminaSheets.SpecialShopSheet?.Values
+                .Where(x => x.Name.ExtractText().ToLower().Contains("allagan tomestones"))
+                .Where(x => x.Item.Any(y => y.Item[0].Row == itemId)).LastOrDefault() ?? null;
+
+            if (itemShop == null) return;
+            if (LuminaSheets.ItemSheet[itemId].LevelEquip < ConstantData.LevelCap && !itemShop.Name.ExtractText().ToLower().Contains("poetics")) return;
+
+            Svc.Log.Debug($"Searching for {LuminaSheets.ItemSheet[itemId].Name} in {itemShop.Name}");
+
+            TomestoneCost = new JobBis_ItemTomestoneCost(itemId, itemShop.RowId);
+            SetTomeCost(itemId);
         }
         
-        public void SetTomeCost()
+        public unsafe void SetTomeCost(uint itemId)
         {
-            if (ItemShop == null) return;
+            if (TomestoneCost == null || TomestoneCost.TomestoneShop == null) return;
 
-            SpecialShop? shop = LuminaSheets.SpecialShopSheet?[ItemShop.GetValueOrDefault()] ?? null;
+            SpecialShop? shop = LuminaSheets.SpecialShopSheet?[TomestoneCost.TomestoneShop.GetValueOrDefault()] ?? null;
             if (shop == null || (!shop.Name.ExtractText().ToLower().Contains("augmentation") && !shop.Name.ExtractText().ToLower().Contains("allagan tomestones"))) return;
 
-            switch (GearSlot)
-            {
-                case CharacterEquippedGearSlotIndex.Head:
-                case CharacterEquippedGearSlotIndex.Gloves:
-                case CharacterEquippedGearSlotIndex.Feet:
-                    TomeCost = ConstantData.LeftSmallCost;
-                    break;
-                case CharacterEquippedGearSlotIndex.Body:
-                case CharacterEquippedGearSlotIndex.Legs:
-                    TomeCost = ConstantData.LeftBigCost;
-                    break;
-                case CharacterEquippedGearSlotIndex.RightRing:
-                case CharacterEquippedGearSlotIndex.LeftRing:
-                case CharacterEquippedGearSlotIndex.Ears:
-                case CharacterEquippedGearSlotIndex.Neck:
-                case CharacterEquippedGearSlotIndex.Wrists:
-                    TomeCost = ConstantData.AccessoryCost;
-                    break;
-                case CharacterEquippedGearSlotIndex.MainHand:
-                default:
-                    break;
-            }
+            var shopItemIndex = shop.Item.IndexOf(x => x.Item[0].Row == itemId);
+            if (shopItemIndex == -1) return;
+            var shopItem = shop.Item[shopItemIndex];
+
+            TomestoneCost.Cost = shopItem.CurrencyCost[0];
+            TomestoneCost.TomestoneId = shopItem.ItemCost[0];
+            Svc.Log.Debug($"Tomestone {TomestoneCost.TomestoneId} Cost: {TomestoneCost.Cost} from {shop.Name}");
         }
     
     }
@@ -610,6 +600,22 @@ namespace BisTracker.BiS.Models
                 return LuminaSheets.ItemSheet[(uint)Id].Name.ExtractText();
 
             return $"{LuminaSheets.BaseParamSheet[(uint)MateriaParameter.Param].Name.ExtractText()} +{MateriaParameter.Value}";
+        }
+    }
+
+    public class JobBis_ItemTomestoneCost
+    {
+        public int? TomestoneId { get; set; }
+
+        public uint? TomestoneShop { get; set; }
+        public uint? ShopItemId { get; set; }
+
+        public uint Cost { get; set; }
+        
+        public JobBis_ItemTomestoneCost(uint itemId, uint shopId)
+        {
+            TomestoneShop = shopId;
+            ShopItemId = itemId;
         }
     }
 
