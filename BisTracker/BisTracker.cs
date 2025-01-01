@@ -173,7 +173,7 @@ public unsafe class BisTracker : IDalamudPlugin
         BiSUI.ResetBis();
     }
 
-    private void OnClientLogout()
+    private void OnClientLogout(int type, int code)
     {
         BiSUI.ResetInputs();
         BiSUI.ResetBis();
