@@ -3,6 +3,7 @@ using ECommons.ExcelServices;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using System.Linq;
 using Lumina.Excel.Sheets;
+using System.Collections.Generic;
 
 namespace BisTracker.RawInformation.Character
 {
@@ -19,10 +20,10 @@ namespace BisTracker.RawInformation.Character
         public static unsafe (uint tomestoneItemId, uint tomestoneCount) GetPlayerTomestoneFromShop(int shopTomestoneCostId)
         {
             //Svc.Log.Debug($"Checking for Shop TomestoneId: {shopTomestoneCostId}");
-            var tomestone = LuminaSheets.TomestonesItemSheet?.FirstOrDefault(x => x.Value.Tomestones.Row == shopTomestoneCostId);
+            var tomestone = LuminaSheets.TomestonesItemSheet?.FirstOrDefault(x => x.Value.Tomestones.RowId == shopTomestoneCostId);
             if (!tomestone.HasValue) return (0, 0);
 
-            return (tomestone.Value.Value.Item.Row, InventoryManager.Instance()->GetTomestoneCount(tomestone.Value.Value.Item.Row));
+            return (tomestone.Value.Value.Item.RowId, InventoryManager.Instance()->GetTomestoneCount(tomestone.Value.Value.Item.RowId));
         }
 
         public static unsafe void SetCharaInventoryPointers()

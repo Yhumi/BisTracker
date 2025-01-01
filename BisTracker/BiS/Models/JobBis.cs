@@ -2,18 +2,11 @@ using BisTracker.RawInformation;
 using BisTracker.RawInformation.Character;
 using ECommons;
 using ECommons.DalamudServices;
-using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.InteropServices.Marshalling;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Linq;
-using static FFXIVClientStructs.FFXIV.Client.System.String.Utf8String.Delegates;
-using static Lumina.Data.Parsing.Layer.LayerCommon;
+using Lumina.Excel.Sheets;
 
 namespace BisTracker.BiS.Models
 {
@@ -329,6 +322,7 @@ namespace BisTracker.BiS.Models
         public string ItemSet => LuminaSheets.ItemSheet[(uint)Id].ItemSeries.Value.Name.ExtractText() ?? string.Empty;
         public CharacterEquippedGearSlotIndex GearSlot { get; set; }
         public List<JobBis_ItemMateria>? Materia { get; set; }
+        public JobBis_ItemTomestoneCost? TomestoneCost { get; set; }
 
         [NonSerialized]
         public List<JobBis_Parameter> BaseParameters;
@@ -481,21 +475,21 @@ namespace BisTracker.BiS.Models
         {
             var itemId = (uint)Id;
             if (ItemName.Contains("Augmented") && LuminaSheets.ItemSheet[(uint)Id].LevelEquip == ConstantData.LevelCap)
-                itemId = LuminaSheets.ItemSheet.FirstOrDefault(x => x.Value.Name.ExtractText() == ItemName.Replace("Augmented ", "")).Key;
+                itemId = LuminaSheets.ItemSheet.FirstOrDefault(x => x.Value.Name.ToString() == ItemName.Replace("Augmented ", "")).Key;
             if (itemId == 0) return;
 
             Svc.Log.Debug($"Searching for {LuminaSheets.ItemSheet[itemId].Name} in shops");
 
             var itemShop = LuminaSheets.SpecialShopSheet?.Values
-                .Where(x => x.Name.ExtractText().ToLower().Contains("allagan tomestones"))
-                .Where(x => x.Item.Any(y => y.Item[0].Row == itemId)).LastOrDefault() ?? null;
+                .Where(x => x.Name.ToString().ToLower().Contains("allagan tomestones"))
+                .Where(x => x.Item.Any(y => y.ReceiveItems[0].Item.RowId == itemId)).LastOrDefault() ?? null;
 
             if (itemShop == null) return;
-            if (LuminaSheets.ItemSheet[itemId].LevelEquip < ConstantData.LevelCap && !itemShop.Name.ExtractText().ToLower().Contains("poetics")) return;
+            if (LuminaSheets.ItemSheet[itemId].LevelEquip < ConstantData.LevelCap && !itemShop.Value.Name.ExtractText().ToLower().Contains("poetics")) return;
 
-            Svc.Log.Debug($"Searching for {LuminaSheets.ItemSheet[itemId].Name} in {itemShop.Name}");
+            Svc.Log.Debug($"Searching for {LuminaSheets.ItemSheet[itemId].Name} in {itemShop.Value.Name}");
 
-            TomestoneCost = new JobBis_ItemTomestoneCost(itemId, itemShop.RowId);
+            TomestoneCost = new JobBis_ItemTomestoneCost(itemId, itemShop.Value.RowId);
             SetTomeCost(itemId);
         }
         
@@ -504,15 +498,15 @@ namespace BisTracker.BiS.Models
             if (TomestoneCost == null || TomestoneCost.TomestoneShop == null) return;
 
             SpecialShop? shop = LuminaSheets.SpecialShopSheet?[TomestoneCost.TomestoneShop.GetValueOrDefault()] ?? null;
-            if (shop == null || (!shop.Name.ExtractText().ToLower().Contains("augmentation") && !shop.Name.ExtractText().ToLower().Contains("allagan tomestones"))) return;
+            if (shop == null || (!shop.Value.Name.ToString().ToLower().Contains("augmentation") && !shop.Value.Name.ExtractText().ToLower().Contains("allagan tomestones"))) return;
 
-            var shopItemIndex = shop.Item.IndexOf(x => x.Item[0].Row == itemId);
+            var shopItemIndex = shop.Value.Item.IndexOf(x => x.ReceiveItems[0].Item.RowId == itemId);
             if (shopItemIndex == -1) return;
-            var shopItem = shop.Item[shopItemIndex];
+            var shopItem = shop.Value.Item[shopItemIndex];
 
-            TomestoneCost.Cost = shopItem.CurrencyCost[0];
-            TomestoneCost.TomestoneId = shopItem.ItemCost[0];
-            Svc.Log.Debug($"Tomestone {TomestoneCost.TomestoneId} Cost: {TomestoneCost.Cost} from {shop.Name}");
+            TomestoneCost.Cost = shopItem.ItemCosts[0].CurrencyCost;
+            TomestoneCost.TomestoneId = (int)shopItem.ItemCosts[0].ItemCost.RowId;
+            Svc.Log.Debug($"Tomestone {TomestoneCost.TomestoneId} Cost: {TomestoneCost.Cost} from {shop.Value.Name}");
         }
     
     }

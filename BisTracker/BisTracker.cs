@@ -19,8 +19,6 @@ using BisTracker.BiS;
 using System.Linq;
 using System;
 using BisTracker.Melding;
-using static FFXIVClientStructs.FFXIV.Client.UI.Agent.AgentPartyMember.Delegates;
-using ECommons.Schedulers;
 
 namespace BisTracker;
 
