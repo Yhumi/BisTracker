@@ -1,17 +1,8 @@
-using BisTracker.BiS;
-using ECommons;
 using ECommons.DalamudServices;
 using ECommons.ExcelServices;
-using ECommons.GameFunctions;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using FFXIVClientStructs.FFXIV.Client.Game.UI;
-using Lumina.Excel.GeneratedSheets2;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Lumina.Excel.Sheets;
 
 namespace BisTracker.RawInformation.Character
 {
@@ -20,8 +11,8 @@ namespace BisTracker.RawInformation.Character
         public static unsafe void UpdateCharaStats(uint? classJobId = null)
         {
             if (Svc.ClientState.LocalPlayer is null) return;
-            JobID = (Job)(classJobId ?? Svc.ClientState.LocalPlayer?.ClassJob.Id ?? 0);
-            JobIDUint = classJobId ?? Svc.ClientState.LocalPlayer?.ClassJob.Id ?? 0;
+            JobID = (Job)(classJobId ?? Svc.ClientState.LocalPlayer?.ClassJob.RowId ?? 0);
+            JobIDUint = classJobId ?? Svc.ClientState.LocalPlayer?.ClassJob.RowId ?? 0;
             CharacterLevel = Svc.ClientState.LocalPlayer?.Level;
         }
 
@@ -90,7 +81,6 @@ namespace BisTracker.RawInformation.Character
         public static unsafe InventoryItem* GetEquippedItem(int itemId)
         {
             var equipSlotCategory = LuminaSheets.ItemSheet[(uint)itemId].EquipSlotCategory.Value;
-            if (equipSlotCategory == null) return null;
 
             var equippedSlot = GetSlotIndexFromEquipSlotCategory(equipSlotCategory);
             if (equippedSlot == null) return null;
@@ -134,9 +124,6 @@ namespace BisTracker.RawInformation.Character
 
             //Now check in AC
             var equipSlotCategory = LuminaSheets.ItemSheet[(uint)itemId].EquipSlotCategory.Value;
-            if (equipSlotCategory == null) 
-                return null;
-
             var equippedSlot = GetSlotIndexFromEquipSlotCategory(equipSlotCategory);
             if (equippedSlot == null) 
                 return null;
@@ -159,8 +146,6 @@ namespace BisTracker.RawInformation.Character
 
             var unaugmentedName = LuminaSheets.ItemSheet[(uint)itemId].Name.ExtractText().Replace("Augmented", "").Trim();
             var unaugmentedItem = LuminaSheets.ItemSheet.Values.Where(x => x.Name.ExtractText().ToLower() == unaugmentedName.ToLower()).FirstOrDefault();
-            if (unaugmentedItem == null) return null;
-
             return FindInventoryItem((int)unaugmentedItem.RowId);
         }
 
@@ -193,20 +178,20 @@ namespace BisTracker.RawInformation.Character
         public static CharacterEquippedGearSlotIndex? GetSlotIndexFromEquipSlotCategory(EquipSlotCategory? category)
         {
             if (category == null) return null;
-            if (category.MainHand == 1) return CharacterEquippedGearSlotIndex.MainHand;
-            if (category.OffHand == 1) return CharacterEquippedGearSlotIndex.OffHand;
-            if (category.Head == 1) return CharacterEquippedGearSlotIndex.Head;
-            if (category.Body == 1) return CharacterEquippedGearSlotIndex.Body;
-            if (category.Gloves == 1) return CharacterEquippedGearSlotIndex.Gloves;
-            if (category.Waist == 1) return CharacterEquippedGearSlotIndex.Waist;
-            if (category.Legs == 1) return CharacterEquippedGearSlotIndex.Legs;
-            if (category.Feet == 1) return CharacterEquippedGearSlotIndex.Feet;
-            if (category.Ears == 1) return CharacterEquippedGearSlotIndex.Ears;
-            if (category.Neck == 1) return CharacterEquippedGearSlotIndex.Neck;
-            if (category.Wrists == 1) return CharacterEquippedGearSlotIndex.Wrists;
-            if (category.FingerR == 1) return CharacterEquippedGearSlotIndex.RightRing;
-            if (category.FingerL == 1) return CharacterEquippedGearSlotIndex.LeftRing;
-            if (category.SoulCrystal == 1) return CharacterEquippedGearSlotIndex.SoulCrystal;
+            if (category.Value.MainHand == 1) return CharacterEquippedGearSlotIndex.MainHand;
+            if (category.Value.OffHand == 1) return CharacterEquippedGearSlotIndex.OffHand;
+            if (category.Value.Head == 1) return CharacterEquippedGearSlotIndex.Head;
+            if (category.Value.Body == 1) return CharacterEquippedGearSlotIndex.Body;
+            if (category.Value.Gloves == 1) return CharacterEquippedGearSlotIndex.Gloves;
+            if (category.Value.Waist == 1) return CharacterEquippedGearSlotIndex.Waist;
+            if (category.Value.Legs == 1) return CharacterEquippedGearSlotIndex.Legs;
+            if (category.Value.Feet == 1) return CharacterEquippedGearSlotIndex.Feet;
+            if (category.Value.Ears == 1) return CharacterEquippedGearSlotIndex.Ears;
+            if (category.Value.Neck == 1) return CharacterEquippedGearSlotIndex.Neck;
+            if (category.Value.Wrists == 1) return CharacterEquippedGearSlotIndex.Wrists;
+            if (category.Value.FingerR == 1) return CharacterEquippedGearSlotIndex.RightRing;
+            if (category.Value.FingerL == 1) return CharacterEquippedGearSlotIndex.LeftRing;
+            if (category.Value.SoulCrystal == 1) return CharacterEquippedGearSlotIndex.SoulCrystal;
             return null;
         }
 

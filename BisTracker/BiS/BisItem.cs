@@ -20,7 +20,7 @@ namespace BisTracker.BiS
         {
             Id = id;
             var item = LuminaSheets.ItemSheet[id];
-            ItemName = item.Name;
+            ItemName = item.Name.ExtractText();
 
             if (materiaIds != null)
             {
@@ -36,7 +36,7 @@ namespace BisTracker.BiS
         {
             Id = (uint)jobBisItem.Id;
             var item = LuminaSheets.ItemSheet[(uint)jobBisItem.Id];
-            ItemName = item.Name;
+            ItemName = item.Name.ExtractText();
 
             if (jobBisItem.Materia != null)
             {
@@ -58,7 +58,7 @@ namespace BisTracker.BiS
         public BisMateria(uint id)
         {
             Id = id;
-            ItemName = LuminaSheets.ItemSheet[id].Name;
+            ItemName = LuminaSheets.ItemSheet[id].Name.ExtractText();
         }
         public BisMateria(JobBis_ItemMateria materia)
         {

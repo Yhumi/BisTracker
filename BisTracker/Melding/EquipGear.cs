@@ -138,7 +138,6 @@ namespace BisTracker.Melding
                 
             //Alright, lets equip it.
             var item = LuminaSheets.ItemSheet[(uint)itemId];
-            if (item == null) return TaskResult.Skip;
 
             var gearSlot = CharacterInfo.GetSlotIndexFromEquipSlotCategory(item.EquipSlotCategory.Value);
             if (gearSlot == null) return TaskResult.Skip;

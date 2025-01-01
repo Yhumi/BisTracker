@@ -2,7 +2,6 @@ using BisTracker.RawInformation;
 using BisTracker.RawInformation.Character;
 using ECommons;
 using ECommons.DalamudServices;
-using Lumina.Excel.GeneratedSheets2;
 using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
@@ -127,7 +126,7 @@ namespace BisTracker.BiS.Models
             {
                 var foodItem = LuminaSheets.GetItemFromItemFoodRowId(etroResponse.Food.GetValueOrDefault());
                 if (foodItem != null)
-                    Food = (int)foodItem.RowId;
+                    Food = (int)foodItem.Value.RowId;
             }
 
             CalculateSetParmeters();
@@ -269,26 +268,7 @@ namespace BisTracker.BiS.Models
 
                 SetParameters.Where(x => x.Param == ConstantData.DoLStatIds["GP"]).First().Value = (short)(gpParam.Value + ConstantData.LevelStats[100].GP);
             }
-
-            //Add food data
-            if (Food != null)
-            {
-                var foodItem = LuminaSheets.ItemSheet[(uint)Food.GetValueOrDefault()];
-                var foodStats = LuminaSheets.ItemFoodSheet[foodItem.ItemAction.Value.Data[1]];
-
-                if (foodStats != null)
-                {
-                    for (int i = 0; i < foodStats.BaseParam.Length; i++)
-                    {
-                        var baseParam = foodStats.BaseParam[i];
-                        var valueHq = foodStats.ValueHQ[i];
-                        var maxHq = foodStats.MaxHQ[i];
-
-                        int paramIndex = SetParameters.FindIndex(x => x.Param == baseParam.Value.RowId);
-                        SetParameters[paramIndex].Value += (short) Math.Min(maxHq, SetParameters[paramIndex].Value * ((100 + valueHq) / 100));
-                    }
-                }
-            }
+            
         }
     
         public void CalculateSetPrice()
@@ -353,8 +333,8 @@ namespace BisTracker.BiS.Models
     public class JobBis_Item
     {
         public int Id { get; set; }
-        public string ItemName => LuminaSheets.ItemSheet[(uint)Id]?.Name.ExtractText() ?? string.Empty;
-        public string ItemSet => LuminaSheets.ItemSheet[(uint)Id]?.ItemSeries.Value.Name.ExtractText() ?? string.Empty;
+        public string ItemName => LuminaSheets.ItemSheet[(uint)Id].Name.ExtractText() ?? string.Empty;
+        public string ItemSet => LuminaSheets.ItemSheet[(uint)Id].ItemSeries.Value.Name.ExtractText() ?? string.Empty;
         public CharacterEquippedGearSlotIndex GearSlot { get; set; }
         public List<JobBis_ItemMateria>? Materia { get; set; }
 
@@ -416,17 +396,17 @@ namespace BisTracker.BiS.Models
             BaseParameters = new List<JobBis_Parameter>();
 
             //Svc.Log.Debug($"[{ItemName}] Use HQ Stats? {LuminaSheets.ItemSheet[(uint)Id]?.CanBeHq}");
-            var useHq = LuminaSheets.ItemSheet[(uint)Id]?.CanBeHq ?? false;
+            var useHq = false;
             var paramItem = LuminaSheets.ItemSheet[(uint)Id];
 
-            foreach (var baseParam in paramItem?.BaseParam ?? [])
+            foreach (var baseParam in paramItem.BaseParam)
             {
-                if (baseParam != null && baseParam.Value.RowId != 0)
+                if (baseParam.Value.RowId != 0)
                 {
-                    var index = LuminaSheets.ItemSheet[(uint)Id]?.BaseParam.IndexOf(x => x.Value.RowId == baseParam.Value.RowId);
+                    var index = LuminaSheets.ItemSheet[(uint)Id].BaseParam.IndexOf(x => x.Value.RowId == baseParam.Value.RowId);
                     if (index != null)
                     {
-                        short val = paramItem.BaseParamValue[index.Value];
+                        short val = paramItem.BaseParamValue[index];
 
                         //Svc.Log.Debug($"[{ItemName}] {LuminaSheets.BaseParamSheet[baseParam.Value.RowId]?.Name} ({baseParam.Value.RowId}): {val}");
                         BaseParameters.Add(new JobBis_Parameter()
@@ -438,21 +418,6 @@ namespace BisTracker.BiS.Models
                 }
             }
             
-            if (useHq)
-            {
-                foreach (var specialParam in paramItem?.BaseParamSpecial ?? [])
-                {
-                    if (specialParam != null && specialParam.Value.RowId != 0)
-                    {
-                        var index = paramItem?.BaseParamSpecial.IndexOf(x => x.Value.RowId == specialParam.Value.RowId);
-                        if (index != null && BaseParameters.FirstOrDefault(x => x.Param == specialParam.Value.RowId) != null)
-                        {
-                            BaseParameters.First(x => x.Param == specialParam.Value.RowId)!.Value += paramItem.BaseParamValueSpecial[index.Value];
-                            //Svc.Log.Debug($"[{ItemName}] {LuminaSheets.BaseParamSheet[specialParam.Value.RowId]?.Name} ({specialParam.Value.RowId}): {BaseParameters.First(x => x.Param == specialParam.Value.RowId)!.Value}");
-                        }
-                    }
-                }
-            }
 
             foreach (var materia in Materia)
             {
@@ -522,7 +487,7 @@ namespace BisTracker.BiS.Models
     public class JobBis_ItemMateria
     {
         public int Id { get; set; }
-        public string ItemName => LuminaSheets.ItemSheet[(uint)Id]?.Name.ExtractText() ?? string.Empty;
+        public string ItemName => LuminaSheets.ItemSheet[(uint)Id].Name.ExtractText();
 
         [NonSerialized]
         public JobBis_Parameter? MateriaParameter;
@@ -546,13 +511,13 @@ namespace BisTracker.BiS.Models
             var luminaMateria = LuminaSheets.GetMateriaFromSpecificMateria(Id);
             if (luminaMateria == null) return;
 
-            var materiaIndex = luminaMateria.Item.Where(x => x.Value != null).IndexOf(x => x.Value.RowId == (uint)Id);
+            var materiaIndex = luminaMateria.Value.Item.IndexOf(x => x.Value.RowId == (uint)Id);
             if (materiaIndex == -1) return;
 
             MateriaParameter = new JobBis_Parameter()
             {
-                Param = (byte)luminaMateria.BaseParam.Value!.RowId,
-                Value = luminaMateria.Value[materiaIndex]
+                Param = (byte)luminaMateria.Value.BaseParam.Value!.RowId,
+                Value = luminaMateria.Value.Value[materiaIndex]
             };
         }
 

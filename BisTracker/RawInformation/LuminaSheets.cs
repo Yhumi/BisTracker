@@ -2,14 +2,15 @@ using BisTracker.RawInformation.Character;
 using ECommons;
 using ECommons.DalamudServices;
 using ECommons.ExcelServices;
-using Lumina.Excel.GeneratedSheets2;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using static Lumina.Excel.GeneratedSheets2.SpecialShop;
+using Lumina.Excel.Sheets;
+
 
 namespace BisTracker.RawInformation
 {
@@ -45,20 +46,23 @@ namespace BisTracker.RawInformation
 
         public static Materia? GetMateriaFromSpecificMateria(int materiaId)
         {
-            var materiaItem = ItemSheet[(uint)materiaId];
-            if (materiaItem == null) return null;
-
-            var materia = MateriaSheet.Where(x => x.Value != null && x.Value.Item.Where(y => y.Value != null).Select(y => y.Value!.RowId).Contains((uint)materiaId)).FirstOrDefault();
-            return materia.Value ?? null;
+            if (ItemSheet == null)
+            {
+                return null;
+            }
+            var materia = MateriaSheet?.FirstOrDefault(x => x.Value.Item.Select(y => y.Value!.RowId).Contains((uint)materiaId));
+            return materia?.Value;
         }
 
         public static uint GetMateriaSheetIdFromMateriaItemId(int materiaItemId)
         {
-            var materiaItem = ItemSheet[(uint)materiaItemId];
-            if (materiaItem == null) return 0;
+            if (ItemSheet == null)
+            {
+                return 0;
+            }
 
-            var materia = MateriaSheet.Where(x => x.Value != null && x.Value.Item.Where(y => y.Value != null).Select(y => y.Value!.RowId).Contains((uint)materiaItemId)).FirstOrDefault();
-            return materia.Key;
+            var materia = MateriaSheet?.FirstOrDefault(x => x.Value.Item.Select(y => y.Value!.RowId).Contains((uint)materiaItemId));
+            return materia.Value.Key;
         }
 
         public static Item? GetItemFromItemFoodRowId(int itemFoodId)
@@ -73,21 +77,19 @@ namespace BisTracker.RawInformation
             if (item == null) return null;
             BaseParam? baseParam = BaseParamSheet?[paramId];
             if (baseParam == null) return null;
-            if (item.ClassJobUse.Value == null || item.EquipSlotCategory.Value == null) return null;
-            if (item.BaseParamModifier >= baseParam.MeldParam.Length) return null;
-            if (item.LevelItem.Value == null) return null;
+            if (item.Value.BaseParamModifier >= baseParam.Value.MeldParam.Count) return null;
 
             PropertyInfo[] properties = typeof(ItemLevel).GetProperties();
-            var baseValProp = properties.Where(x => x.Name.ToLower() == baseParam.Name.ExtractText().Replace(" ", "").ToLower()).FirstOrDefault();
+            var baseValProp = properties.FirstOrDefault(x => x.Name.ToLower() == baseParam.Value.Name.ExtractText().Replace(" ", "").ToLower());
             if (baseValProp == null) return null;
 
-            var baseVal = baseValProp.GetValue(item.LevelItem.Value);
+            var baseVal = baseValProp.GetValue(item.Value.LevelItem.Value);
             if (baseVal == null) return null;
             
-            var slotModifier = GetPercentageForItemSlot(baseParam, item.ClassJobUse.Value, item.EquipSlotCategory.Value);
+            var slotModifier = GetPercentageForItemSlot(baseParam.Value, item.Value.ClassJobUse.Value, item.Value.EquipSlotCategory.Value);
             if (slotModifier == null) return null;
 
-            var baseParamMeldModifier = baseParam.MeldParam[item.BaseParamModifier];
+            var baseParamMeldModifier = baseParam.Value.MeldParam[item.Value.BaseParamModifier];
             return (int) Math.Round((ushort) baseVal * slotModifier.Value / (baseParamMeldModifier * 10d));
         }
 

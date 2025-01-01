@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using BisTracker.BiS.Models;
 using Dalamud.Interface.Utility.Raii;
 using ECommons.ExcelServices;
-using Lumina.Excel.GeneratedSheets2;
 using System.Numerics;
 using OtterGui;
 using Dalamud.Interface.Textures.TextureWraps;
@@ -22,6 +21,7 @@ using ECommons.Automation;
 using BisTracker.Melding;
 using static FFXIVClientStructs.FFXIV.Client.UI.Misc.RaptureGearsetModule.Delegates;
 using System.Xml.Linq;
+using Lumina.Excel.Sheets;
 
 namespace BisTracker.BiS
 {
@@ -128,9 +128,9 @@ namespace BisTracker.BiS
                     }
 
                     foreach (var job in LuminaSheets.ClassJobSheet.Values
-                        .Where(x => !ExcludedJobs.Contains(x.Abbreviation.RawString))
-                        .Where(x => x.Name.RawString.Contains(Search, StringComparison.CurrentCultureIgnoreCase) || x.Abbreviation.RawString.Contains(Search, StringComparison.CurrentCultureIgnoreCase))
-                        .OrderBy(x => x.Name.RawString))
+                        .Where(x => !ExcludedJobs.Contains(x.Abbreviation.ToString()))
+                        .Where(x => x.Name.ToString().Contains(Search, StringComparison.CurrentCultureIgnoreCase) || x.Abbreviation.ToString().Contains(Search, StringComparison.CurrentCultureIgnoreCase))
+                        .OrderBy(x => x.Name.ToString()))
                     {
 
                         bool selected = ImGui.Selectable(JobNameCleanup(job), job.RowId == SelectedJob);
@@ -480,8 +480,7 @@ namespace BisTracker.BiS
             ImGui.TableNextColumn();
 
             if (gearAppItem == null || gearAppItem.Id <= 0) return;
-            Item? luminaItem = LuminaSheets.ItemSheet?[(uint)gearAppItem.Id];
-            if (luminaItem == null) return;
+            Item luminaItem = LuminaSheets.ItemSheet[(uint)gearAppItem.Id];
 
             if (EquippedItems.Contains(gearSlot))
                 itemSlot = $"{itemSlot} (Equipped)";
@@ -497,7 +496,7 @@ namespace BisTracker.BiS
                 DrawItemIcon(luminaItem);
                 ImGui.TableNextColumn();
 
-                ImGui.Text(luminaItem.Name ?? "");
+                ImGui.Text(luminaItem.Name.ToString() ?? "");
                 if (gearAppItem.Materia != null)
                 {
                     foreach (var materia in gearAppItem.Materia)
@@ -552,31 +551,7 @@ namespace BisTracker.BiS
                 {
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
-
-                    if (bis.Food != null)
-                    {
-                        Item? luminaItem = LuminaSheets.ItemSheet?[(uint)bis.Food];
-                        ItemFood? foodItem = LuminaSheets.ItemFoodSheet?[luminaItem.ItemAction.Value.Data[1]];
-
-                        DrawItemIcon(luminaItem);
-                        ImGui.TableNextColumn();
-
-                        ImGui.Text(luminaItem.Name ?? "");
-                        for (int i = 0; i < foodItem.BaseParam.Length; i++)
-                        {
-                            var baseParam = foodItem.BaseParam[i];
-                            var valueHQ = foodItem.ValueHQ[i];
-                            var maxHQ = foodItem.MaxHQ[i];
-
-                            if (baseParam.Value.RowId == 0) return;
-
-                            ImGui.Text($"{baseParam.Value.Name} +{valueHQ}%% (Max {maxHQ})");
-                        }
-                    }
-                    else
-                    {
                         ImGui.Text("No food used.");
-                    }
                 }
 
                 ImGui.TableNextColumn();
@@ -811,8 +786,8 @@ namespace BisTracker.BiS
 
         private static string JobNameCleanup(ClassJob job)
         {
-            string jobNameCapitalised = char.ToUpper(job.Name.RawString.First()) + job.Name.RawString.Substring(1).ToLower();
-            return $"{jobNameCapitalised} ({job.Abbreviation.RawString})";
+            string jobNameCapitalised = char.ToUpper(job.Name.ToString().First()) + job.Name.ToString().Substring(1).ToLower();
+            return $"{jobNameCapitalised} ({job.Abbreviation.ToString()})";
         }
     
         private static void LoadBisFromConfig(string? setName = null)
